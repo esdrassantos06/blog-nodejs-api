@@ -31,9 +31,6 @@ const blogSchema = new Schema({
 
 const Blog = mongoose.model('Blog', blogSchema);
 
-app.get("/", (req, res) => {
-    res.send("🚀 API está rodando!");
-  });
 
 //GET pelo ID
 app.get('/blog/:id', async (req, res) => {
@@ -48,7 +45,7 @@ app.get('/blog/:id', async (req, res) => {
 })
 
 // GET ALL
-app.get('/blog', async (req, res) => {
+app.get('/', async (req, res) => {
     try {
         const blogs = await Blog.find();
         res.send(blogs);
