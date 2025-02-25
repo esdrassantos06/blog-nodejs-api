@@ -33,7 +33,7 @@ const Blog = mongoose.model('Blog', blogSchema);
 
 
 //GET pelo ID
-app.get('/blog/:id', async (req, res) => {
+app.get('/:id', async (req, res) => {
     try {
         const blog = await Blog.findById(req.params.id);
         if (!blog) return res.status(404).send({ message: "Blog not Found" })
@@ -56,7 +56,7 @@ app.get('/', async (req, res) => {
 });
 
 // Rota DELETE
-app.delete('/blog/:id', async (req, res) => {
+app.delete('/:id', async (req, res) => {
     try {
         const blog = await Blog.findByIdAndDelete(req.params.id);
         if (!blog) return res.status(404).send({ message: "Blog not Found" })
@@ -69,7 +69,7 @@ app.delete('/blog/:id', async (req, res) => {
 })
 
 // Rota PUT (atualizar)
-app.put('/blog/:id', async (req, res) => {
+app.put('/:id', async (req, res) => {
 
     try {
         const blog = await Blog.findByIdAndUpdate(req.params.id, {
@@ -91,7 +91,7 @@ app.put('/blog/:id', async (req, res) => {
 
 
 // Rota POST (criar)
-app.post('/blog', async (req, res) => {
+app.post('/', async (req, res) => {
     try {
         const blog = new Blog({
             title: req.body.title,
