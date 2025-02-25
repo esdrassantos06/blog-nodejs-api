@@ -31,6 +31,10 @@ const blogSchema = new Schema({
 
 const Blog = mongoose.model('Blog', blogSchema);
 
+app.get("/", (req, res) => {
+    res.send("🚀 API está rodando!");
+  });
+
 //GET pelo ID
 app.get('/blog/:id', async (req, res) => {
     try {
