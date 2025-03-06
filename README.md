@@ -39,7 +39,7 @@ Esta documentação descreve a API desenvolvida com Express e MongoDB para geren
 
    ```bash
    git clone https://github.com/esdrassantos06/blog-nodejs-api
-   cd api-express-mongodb
+   cd blog-nodejs-api
 
 2. **Instale as dependências:**
 
