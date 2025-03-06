@@ -1,11 +1,9 @@
 import express from 'express';
-import mongoose from 'mongoose';
+import { Sequelize, DataTypes } from 'sequelize';
 import cors from 'cors';
 import dotenv from 'dotenv';
 
 dotenv.config();
-
-const { Schema } = mongoose;
 
 const app = express();
 app.use(express.json());
@@ -13,29 +11,46 @@ app.use(cors());
 
 const port = process.env.PORT || 3000;
 
-mongoose.connect(process.env.MONGO_URL)
-    .then(() => console.log("MongoDB connected"))
-    .catch((error) => console.error("Error when trying to connect the DB", error))
-
-
-const blogSchema = new Schema({
-    title: String,
-
-    author: String,
-
-    description: String,
-
-    age: Number,
+const sequelize = new Sequelize(process.env.DATABASE_URI, {
+    dialect: 'postgres',
+    dialectOptions: {
+        ssl: {
+            require: true,
+            rejectUnauthorized: false // necessário para alguns provedores de hospedagem
+        }
+    }
 });
 
 
-const Blog = mongoose.model('Blog', blogSchema);
+const Blog = sequelize.define('Blog', {
+    title: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    author: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    description: {
+        type: DataTypes.TEXT
+    },
+    age: {
+        type: DataTypes.INTEGER
+    }
+}, {
+    timestamps: true // adiciona automaticamente createdAt e updatedAt
+});
+
+
+sequelize.sync()
+    .then(() => console.log("PostgreSQL database & tables created!"))
+    .catch(err => console.error("Error syncing database:", err));
 
 
 //GET pelo ID
 app.get('/:id', async (req, res) => {
     try {
-        const blog = await Blog.findById(req.params.id);
+        const blog = await Blog.findByPk(req.params.id);
         if (!blog) return res.status(404).send({ message: "Blog not Found" })
         res.send(blog);
     }
@@ -47,7 +62,7 @@ app.get('/:id', async (req, res) => {
 // GET ALL
 app.get('/', async (req, res) => {
     try {
-        const blogs = await Blog.find();
+        const blogs = await Blog.findAll();
         res.send(blogs);
     }
     catch (err) {
@@ -58,9 +73,12 @@ app.get('/', async (req, res) => {
 // Rota DELETE
 app.delete('/:id', async (req, res) => {
     try {
-        const blog = await Blog.findByIdAndDelete(req.params.id);
-        if (!blog) return res.status(404).send({ message: "Blog not Found" })
-        res.send(blog);
+        const blog = await Blog.findByPk(req.params.id);
+        if (!blog) return res.status(404).send({ message: "Blog not Found" });
+
+        await blog.destroy();
+        res.send({ message: "Blog deleted successfully" });
+
     }
     catch (err) {
         res.status(500).send({ error: err.message });
@@ -72,15 +90,16 @@ app.delete('/:id', async (req, res) => {
 app.put('/:id', async (req, res) => {
 
     try {
-        const blog = await Blog.findByIdAndUpdate(req.params.id, {
+        const blog = await Blog.findByPk(req.params.id);
+        if (!blog) return res.status(404).send({ message: "Blog não encontrado" });
+
+        await blog.update({
             title: req.body.title,
             author: req.body.author,
             description: req.body.description,
             age: req.body.age
-        },
-            { new: true }
-        )
-        if (!blog) return res.status(404).send({ message: "Blog não encontrado" });
+          });
+
         res.send(blog);
     }
     catch (err) {
@@ -93,14 +112,12 @@ app.put('/:id', async (req, res) => {
 // Rota POST (criar)
 app.post('/', async (req, res) => {
     try {
-        const blog = new Blog({
+        const blog = await Blog.create({
             title: req.body.title,
             author: req.body.author,
             description: req.body.description,
-            age: req.body.age,
+            age: req.body.age
         });
-
-        await blog.save();
 
         res.status(201).send(blog);
     }
@@ -111,7 +128,6 @@ app.post('/', async (req, res) => {
 
 
 app.listen(port, () => {
-    mongoose.connect(process.env.MONGO_URL);
     console.log(`🚀 Server running on Port ${port}`)
 });
 

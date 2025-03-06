@@ -1,7 +1,7 @@
 
 # Documentação da API - blog-nodejs-api
 
-Esta documentação descreve a API desenvolvida com Express e MongoDB para gerenciar blogs. A API permite criar, ler, atualizar e deletar registros de blog armazenados no MongoDB.
+Esta documentação descreve a API desenvolvida com Express e Postgres para gerenciar blogs. A API permite criar, ler, atualizar e deletar registros de blog armazenados no Postgres.
 
 ---
 
@@ -26,8 +26,7 @@ Esta documentação descreve a API desenvolvida com Express e MongoDB para geren
 
 - **Node.js** – Ambiente de execução JavaScript.
 - **Express** – Framework web para Node.js.
-- **MongoDB** – Banco de dados NoSQL.
-- **Mongoose** – Biblioteca ODM para MongoDB.
+- **Postgres** – Banco de dados SQL.
 - **dotenv** – Carregamento de variáveis de ambiente.
 - **cors** – Middleware para habilitar CORS.
 
