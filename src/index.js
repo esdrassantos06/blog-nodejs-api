@@ -93,6 +93,7 @@ const Blog = sequelize.define('Blog', {
     timestamps: true
 });
 
+/* 
 async function reorganizeIds() {
     const transaction = await sequelize.transaction();
     try {
@@ -115,6 +116,7 @@ async function reorganizeIds() {
         throw error;
     }
 }
+    */
 
 sequelize.sync()
     .then(async () => {
@@ -164,6 +166,7 @@ const authenticateApiKey = (req, res, next) => {
     next();
 };
 app.use(authenticateApiKey);
+
 app.use((err, req, res, next) => {
     logger.error(`Erro não tratado: ${err.message}`, { stack: err.stack });
     res.status(500).json({ message: 'Erro interno do servidor' });
