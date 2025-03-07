@@ -12,7 +12,14 @@ dotenv.config();
 const logger = winston.createLogger({
     level: 'info',
     format: winston.format.json(),
-});
+    transports: [
+        new winston.transports.File({ filename: 'error.log', level: 'error' }),
+        new winston.transports.File({ filename: 'combined.log' }),
+        new winston.transports.Console({
+            format: winston.format.simple()
+        })
+    ]
+})
 
 if (process.env.NODE_ENV !== 'production') {
     logger.add(new winston.transports.Console({
@@ -47,7 +54,7 @@ const sequelize = new Sequelize(process.env.DATABASE_URI, {
     dialectOptions: {
         ssl: process.env.NODE_ENV === 'production' ? {
             require: true,
-            rejectUnauthorized: true // True se estiver em produção
+            rejectUnauthorized: false
         } : false
     },
     logging: (msg) => logger.debug(msg)
@@ -89,7 +96,7 @@ const Blog = sequelize.define('Blog', {
     timestamps: true
 });
 
- 
+
 async function reorganizeIds() {
     const transaction = await sequelize.transaction();
     try {
