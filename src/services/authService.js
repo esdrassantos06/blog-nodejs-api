@@ -104,6 +104,84 @@ class AuthService {
             throw error;
         }
     }
+
+    /**
+ * Delete user by ID (soft delete)
+ * @param {number} id - User ID
+ * @returns {Promise<boolean>} - True if success, false if not found
+ */
+    async deleteUser(id) {
+        try {
+            const user = await User.findByPk(id);
+            if (!user) return false;
+
+            // Soft delete - defines isActive = false
+            await user.update({ isActive: false });
+            logger.info(`User ${id} (${user.username}) marked as inactive`);
+            return true;
+        } catch (error) {
+            logger.error(`Error deleting user ${id}: ${error.message}`);
+            throw error;
+        }
+    }
+
+    /**
+ * Restores a user by ID (soft delete)
+ * @param {number} id - user ID
+ * @returns {Promise<boolean>} - True if success, false if not found
+ */
+    async restoreUser(id) {
+        try {
+            const user = await User.findByPk(id);
+            if (!user || user.isActive) return false;
+
+            await user.update({ isActive: true });
+            logger.info(`User ${id} (${user.username}) successfully restored`);
+            return true;
+        } catch (error) {
+            logger.error(`Error restoring user ${id}: ${error.message}`);
+            throw error;
+        }
+    }
+
+    /**
+ * List all users (active and inactive)
+ * @param {boolean} includeInactive - innclude inactive users
+ * @returns {Promise<Array>} - User list
+ */
+    async getAllUsers(includeInactive = false) {
+        try {
+            const whereClause = includeInactive ? {} : { isActive: true };
+
+            const users = await User.findAll({
+                where: whereClause,
+                attributes: { exclude: ['password'] } // Não retorna senhas
+            });
+
+            return users;
+        } catch (error) {
+            logger.error(`Error fetching users: ${error.message}`);
+            throw error;
+        }
+    }
+
+    /**
+ * Search for users by ID
+ * @param {number} id - User ID
+ * @returns {Promise<Object>} - User found or null if not found
+ */
+    async getUserById(id) {
+        try {
+            const user = await User.findByPk(id, {
+                attributes: { exclude: ['password'] }
+            });
+            return user;
+        } catch (error) {
+            logger.error(`Error fetching user ${id}: ${error.message}`);
+            throw error;
+        }
+
+    }
 }
 
 export default new AuthService();

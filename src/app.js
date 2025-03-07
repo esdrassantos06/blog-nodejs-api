@@ -4,6 +4,7 @@ import { initDatabase } from './config/database.js';
 import logger from './config/logger.js';
 import blogRoutes from './routes/blogRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import userRoutes from './routes/userRoutes.js';
 import { notFoundMiddleware } from './middlewares/error.js';
 
 dotenv.config();
@@ -16,6 +17,7 @@ const startServer = async () => {
 
         app.use('/', blogRoutes);
         app.use('/auth', authRoutes);
+        app.use('/users', userRoutes);
         
         app.use(notFoundMiddleware);
 
