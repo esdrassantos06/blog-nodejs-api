@@ -13,8 +13,6 @@ const logger = winston.createLogger({
     level: 'info',
     format: winston.format.json(),
     transports: [
-        new winston.transports.File({ filename: 'error.log', level: 'error' }),
-        new winston.transports.File({ filename: 'combined.log' }),
         new winston.transports.Console({
             format: winston.format.simple()
         })
@@ -39,9 +37,9 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutos
-    max: 100, // 100 requisições por IP
-    message: 'Muitas requisições deste IP, tente novamente mais tarde'
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // 100 requests per IP
+    message: 'Too many requests from this IP, please try again later'
 });
 app.use(limiter);
 
@@ -111,11 +109,11 @@ async function reorganizeIds() {
         );
         await sequelize.query('DROP TABLE "Blogs_temp";', { transaction });
         await transaction.commit();
-        logger.info('IDs reorganizados sequencialmente');
+        logger.info('IDs reorganized sequentially');
         return true;
     } catch (error) {
         await transaction.rollback();
-        logger.error('Erro ao reorganizar IDs:', error);
+        logger.error('Error reorganizing IDs:', error);
         throw error;
     }
 }
@@ -130,13 +128,13 @@ sequelize.sync()
           SELECT setval(pg_get_serial_sequence('"Blogs"', 'id'), 
           (SELECT MAX(id) FROM "Blogs"));
         `);
-                logger.info("Sequência de IDs atualizada com sucesso!");
+                logger.info("ID sequence updated successfully!");
             } else {
                 await sequelize.query(`ALTER SEQUENCE "Blogs_id_seq" RESTART WITH 1;`);
-                logger.info("Sequência de IDs reiniciada para 1!");
+                logger.info("ID sequence reset to 1!");
             }
         } catch (err) {
-            logger.error("Erro ao ajustar sequência de IDs:", err);
+            logger.error("Error adjusting ID sequence:", err);
         }
     })
     .catch(err => logger.error("Error syncing database:", err));
@@ -150,7 +148,7 @@ const authenticateApiKey = (req, res, next) => {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        logger.warn(`Tentativa de acesso não autorizado: ${req.ip} - ${req.method} ${req.path}`);
+        logger.warn(`Unauthorized access attempt: ${req.ip} - ${req.method} ${req.path}`);
         return res.status(401).json({
             message: "Unauthorized. Missing or invalid token."
         });
@@ -159,7 +157,7 @@ const authenticateApiKey = (req, res, next) => {
     const token = authHeader.split(' ')[1];
 
     if (token !== API_KEY) {
-        logger.warn(`Tentativa de acesso com token inválido: ${req.ip} - ${req.method} ${req.path}`);
+        logger.warn(`Access attempt with invalid token: ${req.ip} - ${req.method} ${req.path}`);
         return res.status(401).json({
             message: "Unauthorized. Invalid token."
         });
@@ -170,8 +168,8 @@ const authenticateApiKey = (req, res, next) => {
 app.use(authenticateApiKey);
 
 app.use((err, req, res, next) => {
-    logger.error(`Erro não tratado: ${err.message}`, { stack: err.stack });
-    res.status(500).json({ message: 'Erro interno do servidor' });
+    logger.error(`Unhandled error: ${err.message}`, { stack: err.stack });
+    res.status(500).json({ message: 'Internal server error' });
 });
 
 const validate = (req, res, next) => {
@@ -184,9 +182,9 @@ const validate = (req, res, next) => {
 
 
 
-//GET pelo ID
+//GET by ID
 app.get('/:id',
-    param('id').isInt().withMessage('ID deve ser um número inteiro'),
+    param('id').isInt().withMessage('ID must be an integer'),
     validate,
     async (req, res) => {
         try {
@@ -194,8 +192,8 @@ app.get('/:id',
             if (!blog) return res.status(404).json({ message: "Blog not Found" });
             res.json(blog);
         } catch (err) {
-            logger.error(`Erro ao buscar blog: ${err.message}`);
-            res.status(500).json({ message: "Erro interno do servidor" });
+            logger.error(`Error fetching blog: ${err.message}`);
+            res.status(500).json({ message: "Internal server error" });
         }
     });
 
@@ -205,14 +203,14 @@ app.get('/', async (req, res) => {
         const blogs = await Blog.findAll({ order: [['id', 'ASC']] });
         res.json(blogs);
     } catch (err) {
-        logger.error(`Erro ao buscar blogs: ${err.message}`);
-        res.status(500).json({ message: "Erro interno do servidor" });
+        logger.error(`Error fetching blogs: ${err.message}`);
+        res.status(500).json({ message: "Internal server error" });
     }
 });
 
-// Rota DELETE
+// DELETE Route
 app.delete('/:id',
-    param('id').isInt().withMessage('ID deve ser um número inteiro'),
+    param('id').isInt().withMessage('ID must be an integer'),
     validate,
     async (req, res) => {
         try {
@@ -221,26 +219,26 @@ app.delete('/:id',
 
             await blog.destroy();
             await reorganizeIds();
-            logger.info(`Blog ${req.params.id} deletado com sucesso`);
+            logger.info(`Blog ${req.params.id} successfully deleted`);
             res.json({ message: "Blog deleted successfully" });
         } catch (err) {
-            logger.error(`Erro ao deletar blog: ${err.message}`);
-            res.status(500).json({ message: "Erro interno do servidor" });
+            logger.error(`Error deleting blog: ${err.message}`);
+            res.status(500).json({ message: "Internal server error" });
         }
     });
 
-// Rota PUT (atualizar)
+// PUT Route (update)
 app.put('/:id',
-    param('id').isInt().withMessage('ID deve ser um número inteiro'),
-    body('title').optional().isString().isLength({ min: 1, max: 200 }).withMessage('Título deve ter entre 1 e 200 caracteres'),
-    body('author').optional().isString().isLength({ min: 1, max: 100 }).withMessage('Autor deve ter entre 1 e 100 caracteres'),
-    body('description').optional().isString().isLength({ max: 5000 }).withMessage('Descrição deve ter no máximo 5000 caracteres'),
-    body('age').optional().isInt({ min: 0, max: 150 }).withMessage('Idade deve ser entre 0 e 150'),
+    param('id').isInt().withMessage('ID must be an integer'),
+    body('title').optional().isString().isLength({ min: 1, max: 200 }).withMessage('Title must be between 1 and 200 characters'),
+    body('author').optional().isString().isLength({ min: 1, max: 100 }).withMessage('Author must be between 1 and 100 characters'),
+    body('description').optional().isString().isLength({ max: 5000 }).withMessage('Description must be at most 5000 characters'),
+    body('age').optional().isInt({ min: 0, max: 150 }).withMessage('Age must be between 0 and 150'),
     validate,
     async (req, res) => {
         try {
             const blog = await Blog.findByPk(req.params.id);
-            if (!blog) return res.status(404).json({ message: "Blog não encontrado" });
+            if (!blog) return res.status(404).json({ message: "Blog not found" });
 
             await blog.update({
                 title: req.body.title || blog.title,
@@ -249,21 +247,21 @@ app.put('/:id',
                 age: req.body.age !== undefined ? req.body.age : blog.age
             });
 
-            logger.info(`Blog ${req.params.id} atualizado com sucesso`);
+            logger.info(`Blog ${req.params.id} updated successfully`);
             res.json(blog);
         } catch (err) {
-            logger.error(`Erro ao atualizar blog: ${err.message}`);
-            res.status(500).json({ message: "Erro interno do servidor" });
+            logger.error(`Error updating blog: ${err.message}`);
+            res.status(500).json({ message: "Internal server error" });
         }
     });
 
 
-// Rota POST (criar)
+// POST Route (create)
 app.post('/',
-    body('title').isString().isLength({ min: 1, max: 200 }).withMessage('Título deve ter entre 1 e 200 caracteres'),
-    body('author').isString().isLength({ min: 1, max: 100 }).withMessage('Autor deve ter entre 1 e 100 caracteres'),
-    body('description').optional().isString().isLength({ max: 5000 }).withMessage('Descrição deve ter no máximo 5000 caracteres'),
-    body('age').optional().isInt({ min: 0, max: 150 }).withMessage('Idade deve ser entre 0 e 150'),
+    body('title').isString().isLength({ min: 1, max: 200 }).withMessage('Title must be between 1 and 200 characters'),
+    body('author').isString().isLength({ min: 1, max: 100 }).withMessage('Author must be between 1 and 100 characters'),
+    body('description').optional().isString().isLength({ max: 5000 }).withMessage('Description must be at most 5000 characters'),
+    body('age').optional().isInt({ min: 0, max: 150 }).withMessage('Age must be between 0 and 150'),
     validate,
     async (req, res) => {
         try {
@@ -274,27 +272,27 @@ app.post('/',
                 age: req.body.age
             });
 
-            logger.info(`Novo blog criado com ID ${blog.id}`);
+            logger.info(`New blog created with ID ${blog.id}`);
             res.status(201).json(blog);
         } catch (err) {
-            logger.error(`Erro ao criar blog: ${err.message}`);
-            res.status(500).json({ message: "Erro interno do servidor" });
+            logger.error(`Error creating blog: ${err.message}`);
+            res.status(500).json({ message: "Internal server error" });
         }
     });
 
 app.post('/admin/reorganize-ids', async (req, res) => {
     try {
         await reorganizeIds();
-        logger.info('IDs reorganizados manualmente');
-        res.status(200).json({ message: "IDs reorganizados com sucesso" });
+        logger.info('IDs manually reorganized');
+        res.status(200).json({ message: "IDs successfully reorganized" });
     } catch (err) {
-        logger.error(`Erro ao reorganizar IDs: ${err.message}`);
-        res.status(500).json({ message: "Erro interno do servidor" });
+        logger.error(`Error reorganizing IDs: ${err.message}`);
+        res.status(500).json({ message: "Internal server error" });
     }
 });
 
 app.use((req, res) => {
-    res.status(404).json({ message: 'Rota não encontrada' });
+    res.status(404).json({ message: 'Route not found' });
 });
 
 app.listen(port, () => {
@@ -302,12 +300,10 @@ app.listen(port, () => {
 });
 
 process.on('uncaughtException', (error) => {
-    logger.error('Erro não capturado:', error);
+    logger.error('Uncaught exception:', error);
     process.exit(1);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-    logger.error('Promessa rejeitada não tratada:', reason);
+    logger.error('Unhandled promise rejection:', reason);
 });
-
-
