@@ -43,19 +43,65 @@ const Blog = sequelize.define('Blog', {
     timestamps: true // adiciona automaticamente createdAt e updatedAt
 });
 
+async function reorganizeIds() {
+    try {
+        const transaction = await sequelize.transaction();
+
+        try {
+
+            await sequelize.query('CREATE TABLE "Blogs_temp" AS SELECT title, author, description, age, "createdAt", "updatedAt" FROM "Blogs" ORDER BY "createdAt";', { transaction });
+
+            await sequelize.query('TRUNCATE TABLE "Blogs" RESTART IDENTITY;', { transaction });
+
+            await sequelize.query('INSERT INTO "Blogs" (title, author, description, age, "createdAt", "updatedAt") SELECT title, author, description, age, "createdAt", "updatedAt" FROM "Blogs_temp";', { transaction });
+
+            await sequelize.query('DROP TABLE "Blogs_temp";', { transaction });
+
+            await transaction.commit();
+            console.log('Todos os IDs foram reorganizados sequencialmente');
+        } catch (error) {
+            await transaction.rollback();
+            throw error;
+        }
+    } catch (error) {
+        console.error('Erro ao reorganizar IDs:', error);
+    }
+}
+
 
 sequelize.sync()
-    .then(() => console.log("PostgreSQL database & tables created!"))
+    .then(async () => {
+        console.log("PostgreSQL database & tables created!")
+        try {
+            const count = await Blog.count();
+
+            if (count > 0) {
+                await sequelize.query(`
+                        SELECT setval(pg_get_serial_sequence('"Blogs"', 'id'), 
+                        (SELECT MAX(id) FROM "Blogs"));
+                    `);
+                console.log("Sequência de IDs atualizada com sucesso!");
+            }
+            else {
+                // Se não houver registros, reinicia a sequência do 1
+                await sequelize.query(`ALTER SEQUENCE "Blogs_id_seq" RESTART WITH 1;`);
+                console.log("Sequência de IDs reiniciada para 1!");
+            }
+        }
+        catch (err) {
+            console.error("Erro ao ajustar sequência de IDs:", err);
+        }
+    })
     .catch(err => console.error("Error syncing database:", err));
 
 // Middleware para verificar autenticação em métodos não-GET
-app.use((req,res,next) =>{
-    if(req.method === 'GET'){
+app.use((req, res, next) => {
+    if (req.method === 'GET') {
         return next();
     }
 
     const authHeader = req.headers.authorization;
-    if(!authHeader || !authHeader.startsWith('Bearer ')){
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return res.status(401).json({
             message: "Unauthorized. Missing or invalid token."
         });
@@ -63,7 +109,7 @@ app.use((req,res,next) =>{
 
     const token = authHeader.split(' ')[1];
 
-    if(token !== API_KEY){
+    if (token !== API_KEY) {
         return res.status(401).json({
             message: "Unauthorized. Invalid token."
         });
@@ -89,7 +135,7 @@ app.get('/:id', async (req, res) => {
 // GET ALL
 app.get('/', async (req, res) => {
     try {
-        const blogs = await Blog.findAll();
+        const blogs = await Blog.findAll({ order: [['id', 'ASC']] });
         res.send(blogs);
     }
     catch (err) {
@@ -104,8 +150,8 @@ app.delete('/:id', async (req, res) => {
         if (!blog) return res.status(404).send({ message: "Blog not Found" });
 
         await blog.destroy();
+        await reorganizeIds();
         res.send({ message: "Blog deleted successfully" });
-
     }
     catch (err) {
         res.status(500).send({ error: err.message });
@@ -125,7 +171,7 @@ app.put('/:id', async (req, res) => {
             author: req.body.author,
             description: req.body.description,
             age: req.body.age
-          });
+        });
 
         res.send(blog);
     }
@@ -152,6 +198,16 @@ app.post('/', async (req, res) => {
         res.status(500).send({ error: err.message });
     }
 })
+
+app.post('/admin/reorganize-ids', async (req, res) => {
+    try {
+        await reorganizeIds();
+        res.status(200).send({ message: "IDs reorganizados com sucesso" });
+    }
+    catch (err) {
+        res.status(500).send({ error: err.message });
+    }
+});
 
 
 app.listen(port, () => {
