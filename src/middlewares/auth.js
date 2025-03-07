@@ -9,10 +9,10 @@ export const authenticate = async (req, res, next) => {
     try {
         const authHeader = req.headers.authorization;
         
-
-
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return next();
+            return res.status(401).json({
+                message: "Unauthorized. Authentication required."
+            });
         }
         
         const token = authHeader.split(' ')[1];
