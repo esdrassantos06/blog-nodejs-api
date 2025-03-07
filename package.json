@@ -2,7 +2,7 @@
   "name": "api-express-postgresql",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "src/app.js",
   "engines": {
     "node": "20.x"
   },
