@@ -93,7 +93,7 @@ const Blog = sequelize.define('Blog', {
     timestamps: true
 });
 
-/* 
+ 
 async function reorganizeIds() {
     const transaction = await sequelize.transaction();
     try {
@@ -116,7 +116,6 @@ async function reorganizeIds() {
         throw error;
     }
 }
-    */
 
 sequelize.sync()
     .then(async () => {
