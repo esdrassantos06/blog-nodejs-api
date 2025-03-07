@@ -22,6 +22,7 @@ const configureServer = () =>{
         methods: ['GET','POST', 'PUT', 'DELETE'],
         allowedHeaders: ['Content-Type', 'Authorization'],
     };
+
     app.use(cors(corsOptions));
 
     const limiter = rateLimit({
@@ -37,9 +38,6 @@ const configureServer = () =>{
         message: 'Too many login attempts from this IP, please try again later'
     });
     app.use('/auth/login', authLimiter);
-
-    // Global Error Middleware
-    app.use(errorMiddleware);
 
     return app;
 }

@@ -7,7 +7,12 @@ class UserController {
      */
     async getAllUsers(req, res) {
         try {
-            // If the requester is an admin, allows viewing inactive users when ?inactive=true
+
+            if (!req.user) {
+                return res.status(401).json({ message: "Authentication required" });
+            }
+
+            
             const includeInactive = req.user.role === 'admin' && req.query.inactive === 'true';
             const users = await authService.getAllUsers(includeInactive);
             res.json(users);

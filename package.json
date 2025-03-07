@@ -9,8 +9,7 @@
   "scripts": {
     "start": "cross-env NODE_ENV=production node src/app.js",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "docs:generate": "cross-env NODE_ENV=production node src/scripts/generate-openapi.js"
+    "lint:fix": "eslint . --fix"
   },
   "keywords": [],
   "author": "",
@@ -29,8 +28,6 @@
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.13.3",
     "sequelize": "^6.37.6",
-    "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1",
     "winston": "^3.17.0",
     "xss-clean": "^0.1.4",
     "zod": "^3.24.2"
