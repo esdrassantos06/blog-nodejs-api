@@ -11,12 +11,14 @@ Esta documentação descreve a API desenvolvida com Express e PostgreSQL para ge
 - [Variáveis de Ambiente](#variáveis-de-ambiente)
 - [Modelo de Dados](#modelo-de-dados)
 - [Autenticação](#autenticação)
+- [Gerenciamento de IDs](#gerenciamento-de-ids)
 - [Endpoints](#endpoints)
   - [GET /](#get-)
   - [GET /:id](#get-id)
   - [POST /](#post-)
   - [PUT /:id](#put-id)
   - [DELETE /:id](#delete-id)
+  - [POST /admin/reorganize-ids](#post-adminreorganize-ids)
 - [Exemplos de Requisições e Respostas](#exemplos-de-requisições-e-respostas)
 - [Rodando a Aplicação](#rodando-a-aplicação)
 
@@ -47,8 +49,9 @@ Esta documentação descreve a API desenvolvida com Express e PostgreSQL para ge
    ```bash
    npm install
    ```
-    
+   
 3. **Configuração do arquivo de variáveis de ambiente (.env):**
+
 Crie um arquivo `.env` na raiz do projeto e defina as seguintes variáveis:
 
    ```bash
@@ -115,11 +118,34 @@ Se a autenticação estiver correta, a API processará sua solicitação. Caso c
 
 ---
 
+## Gerenciamento de IDs
+
+A API implementa um sistema avançado de gerenciamento de IDs para manter os registros de blog em ordem sequencial:
+
+### Recursos de Reorganização de IDs
+
+- **Reinicialização e Reordenação**: Função `reorganizeIds` para redefinir e reordenar os IDs dos posts de blog
+- **Ajuste Automático de Sequência**: Atualização da sequência de IDs no PostgreSQL durante a inicialização
+- **Ordenação por ID**: Retorno dos blogs ordenados por ID na rota GET principal
+- **Rota de Administração**: Endpoint específico para reorganização manual de IDs
+- **Reorganização Após Exclusão**: Reorganização automática dos IDs após a exclusão de um blog
+- **Tratamento de Erros**: Sistema robusto de tratamento de erros e registro de logs
+
+### Funcionamento
+
+1. **Durante a inicialização**: O sistema ajusta a sequência do PostgreSQL para corresponder ao ID máximo existente
+2. **Após deleção**: Quando um blog é excluído, todos os IDs são reorganizados automaticamente
+3. **Manutenção**: Uma rota administrativa permite acionar a reorganização manualmente quando necessário
+
+Esta funcionalidade garante que os IDs permaneçam sequenciais e sem lacunas, facilitando a navegação e a referência aos registros do blog.
+
+---
+
 ## Endpoints
 
 ### **GET /**
 
-**Descrição:** Retorna todos os blogs cadastrados.
+**Descrição:** Retorna todos os blogs cadastrados, ordenados por ID.
 
 **Requisição:**
 
@@ -196,7 +222,7 @@ Se a autenticação estiver correta, a API processará sua solicitação. Caso c
 
 - **Método:** `POST`
 - **URL:** `/`
-- **Headers:** 
+- **Headers:**
   - `Content-Type: application/json`
   - `Authorization: Bearer sua_chave_secreta_aqui`
 
@@ -229,7 +255,7 @@ Se a autenticação estiver correta, a API processará sua solicitação. Caso c
 
 ```json
 {
-  "message": "Autenticação necessária para acessar este método"
+  "message": "Unauthorized. Missing or invalid token."
 }
 ```
 
@@ -243,7 +269,7 @@ Se a autenticação estiver correta, a API processará sua solicitação. Caso c
 
 - **Método:** `PUT`
 - **URL:** `/:id`
-- **Headers:** 
+- **Headers:**
   - `Content-Type: application/json`
   - `Authorization: Bearer sua_chave_secreta_aqui`
 
@@ -284,7 +310,7 @@ Se a autenticação estiver correta, a API processará sua solicitação. Caso c
 
 ```json
 {
-  "message": "Autenticação necessária para acessar este método"
+  "message": "Unauthorized. Missing or invalid token."
 }
 ```
 
@@ -292,13 +318,13 @@ Se a autenticação estiver correta, a API processará sua solicitação. Caso c
 
 ### **DELETE /:id**
 
-**Descrição:** Deleta um blog a partir do ID informado.
+**Descrição:** Deleta um blog a partir do ID informado e reorganiza automaticamente os IDs.
 
 **Requisição:**
 
 - **Método:** `DELETE`
 - **URL:** `/:id`
-- **Headers:** 
+- **Headers:**
   - `Authorization: Bearer sua_chave_secreta_aqui`
 
 **Resposta de Sucesso (200):**
@@ -321,7 +347,36 @@ Se a autenticação estiver correta, a API processará sua solicitação. Caso c
 
 ```json
 {
-  "message": "Autenticação necessária para acessar este método"
+  "message": "Unauthorized. Missing or invalid token."
+}
+```
+
+---
+
+### **POST /admin/reorganize-ids**
+
+**Descrição:** Reorganiza manualmente os IDs de todos os blogs no banco de dados.
+
+**Requisição:**
+
+- **Método:** `POST`
+- **URL:** `/admin/reorganize-ids`
+- **Headers:**
+  - `Authorization: Bearer sua_chave_secreta_aqui`
+
+**Resposta de Sucesso (200):**
+
+```json
+{
+  "message": "IDs reorganizados com sucesso"
+}
+```
+
+**Resposta de Erro (500):**
+
+```json
+{
+  "error": "Mensagem de erro específica"
 }
 ```
 
@@ -397,6 +452,26 @@ Authorization: Bearer sua_chave_secreta_aqui
 
 ---
 
+### **Exemplo de reorganização manual de IDs (POST)**
+
+**Requisição:**
+
+```http
+POST /admin/reorganize-ids HTTP/1.1
+Host: localhost:3000
+Authorization: Bearer sua_chave_secreta_aqui
+```
+
+**Resposta:**
+
+```json
+{
+  "message": "IDs reorganizados com sucesso"
+}
+```
+
+---
+
 ## Rodando a Aplicação
 
 **Inicie o servidor:**
@@ -413,4 +488,4 @@ Exemplo: [http://localhost:3000](http://localhost:3000)
 
 **Logs:**
 
-Ao iniciar, o console exibirá mensagens informando se o PostgreSQL foi conectado com sucesso e que o servidor está rodando.
+Ao iniciar, o console exibirá mensagens informando se o PostgreSQL foi conectado com sucesso, se a sequência de IDs foi ajustada corretamente e que o servidor está rodando.
