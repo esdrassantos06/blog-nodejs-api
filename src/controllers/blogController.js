@@ -6,7 +6,7 @@ import logger from '../config/logger.js';
  */
 class BlogController {
     /**
-     * Obtém um blog pelo ID
+     * Get Blog by ID
      */
     async getBlog(req, res) {
         try {
@@ -15,6 +15,31 @@ class BlogController {
             res.json(blog);
         } catch (err) {
             logger.error(`Controller error fetching blog: ${err.message}`);
+            res.status(500).json({ message: "Internal server error" });
+        }
+    }
+
+    /**
+ * Lista blogs com paginação e filtragem
+ */
+    async getBlogs(req, res) {
+        try {
+            const options = {
+                page: parseInt(req.query.page) || 1,
+                limit: parseInt(req.query.limit) || 10,
+                author: req.query.author,
+                title: req.query.title,
+                search: req.query.search,
+                minAge: req.query.minAge !== undefined ? parseInt(req.query.minAge) : undefined,
+                maxAge: req.query.maxAge !== undefined ? parseInt(req.query.maxAge) : undefined,
+                sortBy: req.query.sortBy,
+                sortOrder: req.query.sortOrder
+            };
+
+            const result = await blogService.getBlogs(options);
+            res.json(result);
+        } catch (err) {
+            logger.error(`Controller error fetching blogs: ${err.message}`);
             res.status(500).json({ message: "Internal server error" });
         }
     }
@@ -32,6 +57,7 @@ class BlogController {
         }
     }
 
+
     /**
      * Create a new blog
      */
@@ -44,7 +70,7 @@ class BlogController {
                 age: req.body.age
             });
             res.status(201).json(blog);
-        } catch (err){
+        } catch (err) {
             logger.error(`Controller error creating blog: ${err.message}`);
             res.status(500).json({ message: "Internal server error" });
         }
@@ -61,7 +87,7 @@ class BlogController {
                 description: req.body.description,
                 age: req.body.age
             });
-            
+
             if (!blog) return res.status(404).json({ message: "Blog not found" });
             res.json(blog);
         } catch (err) {
@@ -77,10 +103,8 @@ class BlogController {
     async deleteBlog(req, res) {
         try {
             const success = await blogService.deleteBlog(req.params.id);
-
-            if (!success) return res.status(404).json({ message: "Blog not found" });
+            if (!success) return res.status(404).json({ message: "Blog not found or already deleted" });
             res.json({ message: "Blog deleted successfully" });
-            
         } catch (err) {
             logger.error(`Controller error deleting blog: ${err.message}`);
             res.status(500).json({ message: "Internal server error" });
@@ -88,18 +112,21 @@ class BlogController {
     }
 
     /**
-     * Reorganize blogs by id manually
+     * Restore a deleted blog
      */
 
-    async reorganizeIds(req, res) {
+    async restoreBlog(req, res) {
         try {
-            await blogService.reorganizeAllIds();
-            res.status(200).json({ message: "IDs successfully reorganized" });
+            const success = await blogService.restoreBlog(req.params.id);
+            if (!success) return res.status(404).json({ message: "Blog not found or not deleted" });
+            res.json({ message: "Blog restored successfully" });
         } catch (err) {
-            logger.error(`Controller error reorganizing IDs: ${err.message}`);
+            logger.error(`Controller error restoring blog: ${err.message}`);
             res.status(500).json({ message: "Internal server error" });
         }
     }
+
+
 }
 
 export default new BlogController();

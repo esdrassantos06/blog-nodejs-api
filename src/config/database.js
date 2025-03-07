@@ -53,7 +53,7 @@ export const initDatabase = async () => {
         }
     }
     catch (error) {
-        logger.error('Unable to connect to the database:', err);
+        logger.error('Unable to connect to the database:', error);
         throw error;
     }
 };

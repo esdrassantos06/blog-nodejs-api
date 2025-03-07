@@ -1,30 +1,66 @@
+import authService from '../services/authService.js';
 import logger from '../config/logger.js';
 
+/**
+ * JWT Auth middleware
+ */
 
-const authenticateApiKey = (req, res, next) =>{
-    if(req.method === "GET" && !req.path.includes('/admin/')) {
-        return next();
-    }
-
-    const authHeader = req.headers.authorization;
-    const API_KEY = process.env.API_KEY;
-
-    if(!authHeader || !authHeader.startsWith('Bearer ')) {
-        logger.error(`Unauthorized access attempt: ${req.ip} - ${req.method} ${req.path}`);
-        return res.status(401).json({
-             message: 'Unauthorized. Missing or invalid token.' 
+export const authenticate = async (req, res, next) => {
+    try {
+        const authHeader = req.headers.authorization;
+        
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            logger.warn(`Unauthorized access attempt: ${req.ip} - ${req.method} ${req.path}`);
+            return res.status(401).json({
+                message: "Unauthorized. Missing or invalid token."
             });
+        }
+        
+        const token = authHeader.split(' ')[1];
+        
+        try {
+            const userData = await authService.verifyToken(token);
+            req.user = userData;
+            next();
+        } catch (error) {
+            logger.warn(`Invalid token: ${req.ip} - ${req.method} ${req.path}`);
+            return res.status(401).json({
+                message: "Unauthorized. Invalid token."
+            });
+        }
+    } catch (error) {
+        logger.error(`Authentication error: ${error.message}`);
+        res.status(500).json({ message: "Internal server error" });
     }
+};
 
-    const token = authHeader.split(' ')[1];
-
-    if(token !== API_KEY){
-        logger.warn(`Acess attempt with invalid token: ${req.ip} - ${req.method} ${req.path}`);
-        return res.status(401).json({
-            message: 'Unauthorized. Invalid token.'
-        });
-    }
-    next();
-}
-
-export default authenticateApiKey;
+/**
+ * Authentication based on user role
+ * @param {string|Array} roles - Allowed Roles
+ */
+export const authorize = (roles) => {
+    return (req, res, next) => {
+        try {
+            if (!req.user) {
+                return res.status(401).json({
+                    message: "Unauthorized. Authentication required."
+                });
+            }
+            
+            const userRole = req.user.role;
+            const allowedRoles = Array.isArray(roles) ? roles : [roles];
+            
+            if (!allowedRoles.includes(userRole) && userRole !== 'admin') {
+                logger.warn(`Authorization failure: User ${req.user.username} (${userRole}) attempted to access ${req.method} ${req.path}`);
+                return res.status(403).json({
+                    message: "Forbidden. Insufficient permissions."
+                });
+            }
+            
+            next();
+        } catch (error) {
+            logger.error(`Authorization error: ${error.message}`);
+            res.status(500).json({ message: "Internal server error" });
+        }
+    };
+};

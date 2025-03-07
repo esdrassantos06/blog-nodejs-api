@@ -31,9 +31,18 @@ const Blog = sequelize.define('Blog', {
             min: 0,
             max: 150
         }
+    },
+    isDeleted: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
     }
 }, {
-    timestamps: true
+    timestamps: true,
+    indexes: [
+        { fields: ['author'] },
+        { fields: ['title'] },
+        { fields: ['isDeleted'] }
+    ]
 });
 
 export default Blog;

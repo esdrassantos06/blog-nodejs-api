@@ -3,6 +3,7 @@ import configureServer from './config/server.js';
 import { initDatabase } from './config/database.js';
 import logger from './config/logger.js';
 import blogRoutes from './routes/blogRoutes.js';
+import authRoutes from './routes/authRoutes.js';
 import { notFoundMiddleware } from './middlewares/error.js';
 
 dotenv.config();
@@ -14,6 +15,8 @@ const startServer = async () => {
         const app = configureServer();
 
         app.use('/', blogRoutes);
+        app.use('/auth', authRoutes);
+        
         app.use(notFoundMiddleware);
 
         const PORT = process.env.PORT || 3000;
