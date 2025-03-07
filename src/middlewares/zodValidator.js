@@ -30,7 +30,7 @@ export const validateWith = (schema) => {
                     errors.params.id &&
                     errors.params.id._errors.includes("ID must be a numeric value")) {
                     const path = req.path;
-                    if (path === '/docs' || path.startsWith('/api-docs') || path === '/favicon.ico') {
+                    if (path === '/docs' || path.startsWith('/api-docs')) {
                         // Para rotas conhecidas, permitimos continuar
                         return next();
                     }
