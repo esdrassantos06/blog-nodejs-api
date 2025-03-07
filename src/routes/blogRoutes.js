@@ -25,16 +25,19 @@ router.get('/:id',
 
 router.post('/',
     validateWith(blogSchemas.create),
+    authorize(['admin', 'editor']),
     blogController.createBlog
 );
 
 router.put('/:id',
     validateWith(blogSchemas.update),
+    authorize(['admin', 'editor']),
     blogController.updateBlog
 );
 
 router.delete('/:id',
     validateWith(blogSchemas.delete),
+    authorize('admin'),
     blogController.deleteBlog
 );
 

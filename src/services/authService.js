@@ -30,36 +30,44 @@ class AuthService {
      */
     async login(username, password) {
         try {
-            const user = await User.findOne({ 
-                where: { 
+            const user = await User.findOne({
+                where: {
                     username,
                     isActive: true
-                } 
+                }
             });
-            
+
+
             if (!user) {
                 throw new Error('User not found or inactive');
             }
-            
+
             const isPasswordValid = await user.comparePassword(password);
             if (!isPasswordValid) {
                 throw new Error('Invalid password');
             }
-            
+
             // Generate JWT token
             const token = jwt.sign(
-                { 
+                {
                     id: user.id,
                     username: user.username,
                     role: user.role
-                }, 
+                },
                 process.env.JWT_SECRET,
-                { expiresIn: '1d' }
+                {
+                    expiresIn: '1d'
+                }
             );
-            
+
+            // Debugging
+            console.log('Generated token:', token);
+
+
+
             const userWithoutPassword = user.toJSON();
             delete userWithoutPassword.password;
-            
+
             return {
                 token,
                 user: userWithoutPassword
@@ -69,7 +77,7 @@ class AuthService {
             throw error;
         }
     }
-    
+
     /**
      * Verify a JWT token
      * @param {string} token - JWT Token
@@ -77,14 +85,20 @@ class AuthService {
      */
     async verifyToken(token) {
         try {
+
+            if (!process.env.JWT_SECRET) {
+                throw new Error('JWT Secret is not defined');
+            }
+
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
             const user = await User.findByPk(decoded.id);
-            
+
             if (!user || !user.isActive) {
                 throw new Error('User not found or inactive');
             }
-            
+
             return decoded;
+
         } catch (error) {
             logger.error(`Error verifying token: ${error.message}`);
             throw error;

@@ -9,28 +9,27 @@ export const authenticate = async (req, res, next) => {
     try {
         const authHeader = req.headers.authorization;
         
+
+
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            logger.warn(`Unauthorized access attempt: ${req.ip} - ${req.method} ${req.path}`);
-            return res.status(401).json({
-                message: "Unauthorized. Missing or invalid token."
-            });
+            return next();
         }
         
         const token = authHeader.split(' ')[1];
         
+
         try {
             const userData = await authService.verifyToken(token);
             req.user = userData;
             next();
         } catch (error) {
-            logger.warn(`Invalid token: ${req.ip} - ${req.method} ${req.path}`);
-            return res.status(401).json({
-                message: "Unauthorized. Invalid token."
-            });
+            logger.warn(`Token verification failed: ${error.message}`);
+            next();
         }
+
     } catch (error) {
         logger.error(`Authentication error: ${error.message}`);
-        res.status(500).json({ message: "Internal server error" });
+        next(error);
     }
 };
 

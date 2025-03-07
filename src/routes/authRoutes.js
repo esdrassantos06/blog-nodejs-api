@@ -2,7 +2,6 @@ import { Router } from 'express';
 import { body } from 'express-validator';
 import authController from '../controllers/authController.js';
 import validate from '../middlewares/validator.js';
-import { authenticate, authorize } from '../middlewares/auth.js';
 
 const router = Router();
 
@@ -12,8 +11,6 @@ router.post('/register',
     body('password').isString().isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
     body('role').optional().isIn(['user', 'editor', 'admin']).withMessage('Role must be user, editor, or admin'),
     validate,
-    authenticate,
-    authorize('admin'), // Only Admin can register users
     authController.register
 );
 
