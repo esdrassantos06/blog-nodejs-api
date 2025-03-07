@@ -23,9 +23,9 @@ const startServer = async () => {
             res.redirect('https://blog-api.apidocumentation.com/guide/getting-started-with-the-blog-api');
         });
 
-        app.use('/', blogRoutes);
         app.use('/auth', authRoutes);
         app.use('/users', userRoutes);
+        app.use('/', blogRoutes);
 
         app.use(notFoundMiddleware);
 
