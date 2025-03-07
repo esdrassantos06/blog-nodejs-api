@@ -7,6 +7,7 @@ This documentation describes the API developed with Express and PostgreSQL for b
 ## Table of Contents
 
 - [Technologies Used](#technologies-used)
+- [Project Structure](#project-structure)
 - [Installation and Configuration](#installation-and-configuration)
 - [Environment Variables](#environment-variables)
 - [Data Model](#data-model)
@@ -40,6 +41,37 @@ This documentation describes the API developed with Express and PostgreSQL for b
 - **express-rate-limit** – Limits requests by IP.
 - **express-validator** – Data validation for requests.
 - **winston** – Logging system for the application.
+
+---
+
+## Project Structure
+
+The project follows a modular architecture for better organization and maintenance:
+
+```
+src/
+├── config/            # Configurations
+│   ├── database.js    # Sequelize configuration
+│   ├── logger.js      # Winston configuration
+│   └── server.js      # Express configuration
+├── controllers/       # Controllers
+│   └── blogController.js
+├── middlewares/       # Middlewares
+│   ├── auth.js        # Authentication
+│   ├── error.js       # Error handling
+│   └── validator.js   # Data validation
+├── models/            # Models
+│   └── blog.js        # Blog model
+├── routes/            # Routes
+│   └── blogRoutes.js
+├── services/          # Services (business logic)
+│   └── blogService.js
+├── utils/             # Utilities
+│   └── idReorganizer.js
+└── app.js             # Application entry point
+```
+
+This structure follows the principles of separation of concerns, making the code more maintainable and easier to test.
 
 ---
 
@@ -105,6 +137,8 @@ This API implements a token-based authentication system to protect data modifica
 - **GET** endpoints are public and can be accessed by anyone without authentication (except administrative routes).
 - **POST**, **PUT**, **DELETE** endpoints and all **/admin/** routes require API token authentication.
 
+The authentication logic is encapsulated in the `middlewares/auth.js` file.
+
 To use protected methods, you must include the authorization header in your requests:
 
 ```
@@ -132,20 +166,20 @@ If the authentication is correct, the API will process your request. Otherwise, 
 
 ## Security
 
-The API implements several security layers:
+The API implements several security layers, configured in `config/server.js`:
 
 - **Helmet**: HTTP headers configuration for protection against common vulnerabilities
 - **Rate Limiting**: Limit of 100 requests per IP in 15-minute windows
 - **Payload Size Limitation**: Maximum of 1MB for JSON requests
 - **SSL Verification**: In production environment, requires valid SSL connections
 - **Configurable CORS**: Origin restriction based on environment configuration
-- **Input Validation**: Strict verification of all received data
+- **Input Validation**: Strict verification of all received data through `middlewares/validator.js`
 
 ---
 
 ## ID Management
 
-The API implements an advanced ID management system to keep blog records in sequential order:
+The API implements an advanced ID management system to keep blog records in sequential order. This functionality is handled by the `utils/idReorganizer.js` file:
 
 ### ID Reorganization Features
 
@@ -168,7 +202,7 @@ This functionality ensures that IDs remain sequential and without gaps, facilita
 
 ## Data Validation
 
-The API uses express-validator to ensure all received data meets the defined criteria:
+The API uses express-validator to ensure all received data meets the defined criteria, implemented in `middlewares/validator.js`:
 
 - **title**: Required string between 1 and 200 characters
 - **author**: Required string between 1 and 100 characters
@@ -182,7 +216,7 @@ Validation errors are returned with status 400 and include details about each in
 
 ## Logging
 
-The API implements a complete logging system with Winston:
+The API implements a complete logging system with Winston, configured in `config/logger.js`:
 
 - **Console**: In development environment, logs are also displayed in the console
 - **Log Levels**: 
@@ -196,6 +230,8 @@ Logs include timestamps and contextual details to facilitate debugging.
 ---
 
 ## Endpoints
+
+All routes are defined in `routes/blogRoutes.js` and implemented in `controllers/blogController.js` with business logic in `services/blogService.js`.
 
 ### **GET /**
 
@@ -423,7 +459,7 @@ Logs include timestamps and contextual details to facilitate debugging.
   "errors": [
     {
       "param": "age",
-      "msg": "Age must be between a and 150",
+      "msg": "Age must be between 0 and 150",
       "location": "body"
     }
   ]
@@ -523,7 +559,7 @@ Logs include timestamps and contextual details to facilitate debugging.
 
 ## Error Handling
 
-The API implements error handling at multiple levels:
+The API implements error handling at multiple levels through `middlewares/error.js`:
 
 - **Error Middleware**: Captures unhandled exceptions and returns standardized messages
 - **Request Validation**: Verifies input data before processing
@@ -640,4 +676,4 @@ Example: [http://localhost:3000](http://localhost:3000)
 
 **Logs:**
 
-The application generates logs in the terminal.
+The application generates logs as configured in `config/logger.js`.
