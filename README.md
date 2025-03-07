@@ -12,6 +12,7 @@ Esta documentação descreve a API desenvolvida com Express e PostgreSQL para ge
 - [Modelo de Dados](#modelo-de-dados)
 - [Autenticação](#autenticação)
 - [Gerenciamento de IDs](#gerenciamento-de-ids)
+- [Segurança](#segurança)
 - [Endpoints](#endpoints)
   - [GET /](#get-)
   - [GET /:id](#get-id)
@@ -19,8 +20,11 @@ Esta documentação descreve a API desenvolvida com Express e PostgreSQL para ge
   - [PUT /:id](#put-id)
   - [DELETE /:id](#delete-id)
   - [POST /admin/reorganize-ids](#post-adminreorganize-ids)
+- [Validação de Dados](#validação-de-dados)
+- [Logging](#logging)
 - [Exemplos de Requisições e Respostas](#exemplos-de-requisições-e-respostas)
 - [Rodando a Aplicação](#rodando-a-aplicação)
+- [Tratamento de Erros](#tratamento-de-erros)
 
 ---
 
@@ -32,6 +36,10 @@ Esta documentação descreve a API desenvolvida com Express e PostgreSQL para ge
 - **Sequelize** – ORM (Object-Relational Mapping) para PostgreSQL.
 - **dotenv** – Carregamento de variáveis de ambiente.
 - **cors** – Middleware para habilitar CORS.
+- **helmet** – Middleware para segurança HTTP.
+- **express-rate-limit** – Limita requisições por IP.
+- **express-validator** – Validação de dados nas requisições.
+- **winston** – Sistema de logging para a aplicação.
 
 ---
 
@@ -52,21 +60,25 @@ Esta documentação descreve a API desenvolvida com Express e PostgreSQL para ge
    
 3. **Configuração do arquivo de variáveis de ambiente (.env):**
 
-Crie um arquivo `.env` na raiz do projeto e defina as seguintes variáveis:
+   Crie um arquivo `.env` na raiz do projeto e defina as seguintes variáveis:
 
    ```bash
    DATABASE_URI=postgres://username:password@host:port/database
    PORT=3000
    API_KEY=sua_chave_secreta_aqui
+   ALLOWED_ORIGINS=http://localhost:3000,https://seusite.com
+   NODE_ENV=development
    ```
    
-Certifique-se de substituir `postgres://username:password@host:port/database` pela sua URL de conexão com o PostgreSQL e `sua_chave_secreta_aqui` por uma chave de API forte e única.
+   Certifique-se de substituir `postgres://username:password@host:port/database` pela sua URL de conexão com o PostgreSQL e `sua_chave_secreta_aqui` por uma chave de API forte e única.
 
 ## Variáveis de Ambiente
 
-- `DATABASE_URL`: URL de conexão com o banco de dados PostgreSQL.
+- `DATABASE_URI`: URL de conexão com o banco de dados PostgreSQL.
 - `PORT`: Porta na qual o servidor irá rodar (padrão: 3000).
 - `API_KEY`: Chave secreta para autorizar operações de modificação (POST, PUT, DELETE).
+- `ALLOWED_ORIGINS`: Lista de origens permitidas para CORS (separadas por vírgula).
+- `NODE_ENV`: Ambiente de execução (development, production).
 
 ## Modelo de Dados
 
@@ -75,10 +87,10 @@ O modelo de dados utilizado é o **Blog** com os seguintes campos:
 ```json
 {
   "id": "Integer (auto-incremento)", // ID numérico sequencial gerado automaticamente
-  "title": "String", // Título do blog.
-  "author": "String", // Autor do blog.
-  "description": "String", // Descrição ou conteúdo do blog.
-  "age": "Integer", // Pode ser usado para qualquer finalidade, por exemplo, idade do autor ou tempo de publicação.
+  "title": "String", // Título do blog. Obrigatório, entre 1 e 200 caracteres.
+  "author": "String", // Autor do blog. Obrigatório, entre 1 e 100 caracteres.
+  "description": "String", // Descrição ou conteúdo do blog. Máximo de 5000 caracteres.
+  "age": "Integer", // Número inteiro entre 0 e 150.
   "createdAt": "Date", // Data de criação do registro (gerado automaticamente)
   "updatedAt": "Date" // Data da última atualização (gerado automaticamente)
 }
@@ -90,8 +102,8 @@ O modelo de dados utilizado é o **Blog** com os seguintes campos:
 
 Esta API implementa um sistema de autenticação baseado em token para proteger as operações de modificação de dados:
 
-- Endpoints **GET** são públicos e podem ser acessados por qualquer pessoa sem autenticação.
-- Endpoints **POST**, **PUT** e **DELETE** requerem autenticação via token de API.
+- Endpoints **GET** são públicos e podem ser acessados por qualquer pessoa sem autenticação (exceto rotas administrativas).
+- Endpoints **POST**, **PUT**, **DELETE** e todas as rotas **/admin/** requerem autenticação via token de API.
 
 Para usar os métodos protegidos, você deve incluir o cabeçalho de autorização em suas requisições:
 
@@ -114,7 +126,20 @@ Onde `sua_chave_secreta_aqui` deve corresponder à chave definida na variável d
    - Adicione o JSON com os dados do blog
 6. Clique em "Send" para enviar a requisição
 
-Se a autenticação estiver correta, a API processará sua solicitação. Caso contrário, você receberá um erro 401 (Não Autorizado) ou 403 (Proibido).
+Se a autenticação estiver correta, a API processará sua solicitação. Caso contrário, você receberá um erro 401 (Não Autorizado).
+
+---
+
+## Segurança
+
+A API implementa várias camadas de segurança:
+
+- **Helmet**: Configuração de cabeçalhos HTTP para proteção contra vulnerabilidades comuns
+- **Rate Limiting**: Limite de 100 requisições por IP em janelas de 15 minutos
+- **Limitação de Tamanho de Payload**: Máximo de 1MB para requisições JSON
+- **Verificação de SSL**: Em ambiente de produção, exige conexões SSL válidas
+- **CORS Configurável**: Restrição de origens com base na configuração do ambiente
+- **Validação de Entradas**: Verificação rigorosa de todos os dados recebidos
 
 ---
 
@@ -138,6 +163,38 @@ A API implementa um sistema avançado de gerenciamento de IDs para manter os reg
 3. **Manutenção**: Uma rota administrativa permite acionar a reorganização manualmente quando necessário
 
 Esta funcionalidade garante que os IDs permaneçam sequenciais e sem lacunas, facilitando a navegação e a referência aos registros do blog.
+
+---
+
+## Validação de Dados
+
+A API utiliza express-validator para garantir que todos os dados recebidos atendam aos critérios definidos:
+
+- **title**: String obrigatória entre 1 e 200 caracteres
+- **author**: String obrigatória entre 1 e 100 caracteres
+- **description**: String opcional com máximo de 5000 caracteres
+- **age**: Número inteiro opcional entre 0 e 150
+- **id**: Validação em parâmetros de rota para garantir que sejam números inteiros
+
+Os erros de validação são retornados com status 400 e incluem detalhes sobre cada campo inválido.
+
+---
+
+## Logging
+
+A API implementa um sistema completo de logging com Winston:
+
+- **Arquivos de Log**: 
+  - `error.log`: Apenas mensagens de erro
+  - `combined.log`: Todas as mensagens de log
+- **Console**: Em ambiente de desenvolvimento, logs também são exibidos no console
+- **Níveis de Log**: 
+  - INFO: Operações normais, inicialização, criação de recursos
+  - ERROR: Falhas do sistema, erros de banco de dados
+  - WARN: Tentativas de acesso não autorizadas
+  - DEBUG: Logs de consultas SQL (quando ativado)
+
+Os logs incluem timestamps e detalhes contextuais para facilitar a depuração.
 
 ---
 
@@ -178,6 +235,14 @@ Esta funcionalidade garante que os IDs permaneçam sequenciais e sem lacunas, fa
 ]
 ```
 
+**Resposta de Erro (500):**
+
+```json
+{
+  "message": "Erro interno do servidor"
+}
+```
+
 ---
 
 ### **GET /:id**
@@ -189,6 +254,7 @@ Esta funcionalidade garante que os IDs permaneçam sequenciais e sem lacunas, fa
 - **Método:** `GET`
 - **URL:** `/:id`
 - **Autenticação:** Não necessária
+- **Validação:** ID deve ser um número inteiro
 
 **Resposta de Sucesso (200):**
 
@@ -212,6 +278,20 @@ Esta funcionalidade garante que os IDs permaneçam sequenciais e sem lacunas, fa
 }
 ```
 
+**Resposta de Erro (400) - Validação:**
+
+```json
+{
+  "errors": [
+    {
+      "param": "id",
+      "msg": "ID deve ser um número inteiro",
+      "location": "params"
+    }
+  ]
+}
+```
+
 ---
 
 ### **POST /**
@@ -225,6 +305,11 @@ Esta funcionalidade garante que os IDs permaneçam sequenciais e sem lacunas, fa
 - **Headers:**
   - `Content-Type: application/json`
   - `Authorization: Bearer sua_chave_secreta_aqui`
+- **Validação:** 
+  - title: String obrigatória entre 1 e 200 caracteres
+  - author: String obrigatória entre 1 e 100 caracteres
+  - description: String opcional com máximo de 5000 caracteres
+  - age: Número inteiro opcional entre 0 e 150
 
 **Body:**
 
@@ -259,6 +344,20 @@ Esta funcionalidade garante que os IDs permaneçam sequenciais e sem lacunas, fa
 }
 ```
 
+**Resposta de Erro (400) - Validação:**
+
+```json
+{
+  "errors": [
+    {
+      "param": "title",
+      "msg": "Título deve ter entre 1 e 200 caracteres",
+      "location": "body"
+    }
+  ]
+}
+```
+
 ---
 
 ### **PUT /:id**
@@ -272,6 +371,12 @@ Esta funcionalidade garante que os IDs permaneçam sequenciais e sem lacunas, fa
 - **Headers:**
   - `Content-Type: application/json`
   - `Authorization: Bearer sua_chave_secreta_aqui`
+- **Validação:**
+  - id: Deve ser um número inteiro
+  - title: String opcional entre 1 e 200 caracteres
+  - author: String opcional entre 1 e 100 caracteres
+  - description: String opcional com máximo de 5000 caracteres
+  - age: Número inteiro opcional entre 0 e 150
 
 **Body:**
 
@@ -314,6 +419,20 @@ Esta funcionalidade garante que os IDs permaneçam sequenciais e sem lacunas, fa
 }
 ```
 
+**Resposta de Erro (400) - Validação:**
+
+```json
+{
+  "errors": [
+    {
+      "param": "age",
+      "msg": "Idade deve ser entre 0 e 150",
+      "location": "body"
+    }
+  ]
+}
+```
+
 ---
 
 ### **DELETE /:id**
@@ -326,6 +445,7 @@ Esta funcionalidade garante que os IDs permaneçam sequenciais e sem lacunas, fa
 - **URL:** `/:id`
 - **Headers:**
   - `Authorization: Bearer sua_chave_secreta_aqui`
+- **Validação:** ID deve ser um número inteiro
 
 **Resposta de Sucesso (200):**
 
@@ -351,6 +471,20 @@ Esta funcionalidade garante que os IDs permaneçam sequenciais e sem lacunas, fa
 }
 ```
 
+**Resposta de Erro (400) - Validação:**
+
+```json
+{
+  "errors": [
+    {
+      "param": "id",
+      "msg": "ID deve ser um número inteiro",
+      "location": "params"
+    }
+  ]
+}
+```
+
 ---
 
 ### **POST /admin/reorganize-ids**
@@ -372,13 +506,34 @@ Esta funcionalidade garante que os IDs permaneçam sequenciais e sem lacunas, fa
 }
 ```
 
+**Resposta de Erro (401):**
+
+```json
+{
+  "message": "Unauthorized. Missing or invalid token."
+}
+```
+
 **Resposta de Erro (500):**
 
 ```json
 {
-  "error": "Mensagem de erro específica"
+  "message": "Erro interno do servidor"
 }
 ```
+
+---
+
+## Tratamento de Erros
+
+A API implementa tratamento de erros em múltiplos níveis:
+
+- **Middleware de Erros**: Captura exceções não tratadas e retorna mensagens padronizadas
+- **Validação de Requisições**: Verifica dados de entrada antes do processamento
+- **Tratamento de Exceções**: Try/catch em todas as operações de banco de dados
+- **Logging de Erros**: Registro detalhado de todos os erros para depuração
+- **Handlers para Processos**: Captura de exceções não tratadas e promessas rejeitadas no nível do processo
+- **Retorno apropriado de códigos HTTP**: Uso adequado de status codes (400, 401, 404, 500)
 
 ---
 
@@ -488,4 +643,6 @@ Exemplo: [http://localhost:3000](http://localhost:3000)
 
 **Logs:**
 
-Ao iniciar, o console exibirá mensagens informando se o PostgreSQL foi conectado com sucesso, se a sequência de IDs foi ajustada corretamente e que o servidor está rodando.
+A aplicação gera logs em:
+- `error.log`: Apenas erros
+- `combined.log`: Todos os logs da aplicação
