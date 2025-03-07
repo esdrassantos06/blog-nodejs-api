@@ -19,12 +19,6 @@ const logger = winston.createLogger({
     ]
 })
 
-if (process.env.NODE_ENV !== 'production') {
-    logger.add(new winston.transports.Console({
-        format: winston.format.simple()
-    }));
-}
-
 const app = express();
 app.use(helmet());
 app.use(express.json({ limit: '1mb' }));
