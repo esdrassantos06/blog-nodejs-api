@@ -180,9 +180,6 @@ const validate = (req, res, next) => {
     next();
 };
 
-
-
-//GET by ID
 app.get('/:id',
     param('id').isInt().withMessage('ID must be an integer'),
     validate,
@@ -197,7 +194,7 @@ app.get('/:id',
         }
     });
 
-// GET ALL
+
 app.get('/', async (req, res) => {
     try {
         const blogs = await Blog.findAll({ order: [['id', 'ASC']] });
@@ -208,7 +205,7 @@ app.get('/', async (req, res) => {
     }
 });
 
-// DELETE Route
+
 app.delete('/:id',
     param('id').isInt().withMessage('ID must be an integer'),
     validate,
@@ -227,7 +224,7 @@ app.delete('/:id',
         }
     });
 
-// PUT Route (update)
+
 app.put('/:id',
     param('id').isInt().withMessage('ID must be an integer'),
     body('title').optional().isString().isLength({ min: 1, max: 200 }).withMessage('Title must be between 1 and 200 characters'),
@@ -256,7 +253,7 @@ app.put('/:id',
     });
 
 
-// POST Route (create)
+
 app.post('/',
     body('title').isString().isLength({ min: 1, max: 200 }).withMessage('Title must be between 1 and 200 characters'),
     body('author').isString().isLength({ min: 1, max: 100 }).withMessage('Author must be between 1 and 100 characters'),

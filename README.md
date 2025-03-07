@@ -1,18 +1,18 @@
-# Documentação da API - blog-nodejs-api
+# API Documentation - blog-nodejs-api
 
-Esta documentação descreve a API desenvolvida com Express e PostgreSQL para gerenciar blogs. A API permite criar, ler, atualizar e deletar registros de blog armazenados no PostgreSQL, com restrições de acesso para métodos de modificação.
+This documentation describes the API developed with Express and PostgreSQL for blog management. The API allows creating, reading, updating, and deleting blog records stored in PostgreSQL, with access restrictions for modification methods.
 
 ---
 
-## Índice
+## Table of Contents
 
-- [Tecnologias Utilizadas](#tecnologias-utilizadas)
-- [Instalação e Configuração](#instalação-e-configuração)
-- [Variáveis de Ambiente](#variáveis-de-ambiente)
-- [Modelo de Dados](#modelo-de-dados)
-- [Autenticação](#autenticação)
-- [Gerenciamento de IDs](#gerenciamento-de-ids)
-- [Segurança](#segurança)
+- [Technologies Used](#technologies-used)
+- [Installation and Configuration](#installation-and-configuration)
+- [Environment Variables](#environment-variables)
+- [Data Model](#data-model)
+- [Authentication](#authentication)
+- [ID Management](#id-management)
+- [Security](#security)
 - [Endpoints](#endpoints)
   - [GET /](#get-)
   - [GET /:id](#get-id)
@@ -20,181 +20,178 @@ Esta documentação descreve a API desenvolvida com Express e PostgreSQL para ge
   - [PUT /:id](#put-id)
   - [DELETE /:id](#delete-id)
   - [POST /admin/reorganize-ids](#post-adminreorganize-ids)
-- [Validação de Dados](#validação-de-dados)
+- [Data Validation](#data-validation)
 - [Logging](#logging)
-- [Exemplos de Requisições e Respostas](#exemplos-de-requisições-e-respostas)
-- [Rodando a Aplicação](#rodando-a-aplicação)
-- [Tratamento de Erros](#tratamento-de-erros)
+- [Request and Response Examples](#request-and-response-examples)
+- [Running the Application](#running-the-application)
+- [Error Handling](#error-handling)
 
 ---
 
-## Tecnologias Utilizadas
+## Technologies Used
 
-- **Node.js** – Ambiente de execução JavaScript.
-- **Express** – Framework web para Node.js.
-- **PostgreSQL** – Banco de dados SQL relacional.
-- **Sequelize** – ORM (Object-Relational Mapping) para PostgreSQL.
-- **dotenv** – Carregamento de variáveis de ambiente.
-- **cors** – Middleware para habilitar CORS.
-- **helmet** – Middleware para segurança HTTP.
-- **express-rate-limit** – Limita requisições por IP.
-- **express-validator** – Validação de dados nas requisições.
-- **winston** – Sistema de logging para a aplicação.
+- **Node.js** – JavaScript runtime environment.
+- **Express** – Web framework for Node.js.
+- **PostgreSQL** – Relational SQL database.
+- **Sequelize** – ORM (Object-Relational Mapping) for PostgreSQL.
+- **dotenv** – Loading environment variables.
+- **cors** – Middleware for enabling CORS.
+- **helmet** – Middleware for HTTP security.
+- **express-rate-limit** – Limits requests by IP.
+- **express-validator** – Data validation for requests.
+- **winston** – Logging system for the application.
 
 ---
 
-## Instalação e Configuração
+## Installation and Configuration
 
-1. **Clone o repositório:**
+1. **Clone the repository:**
 
    ```bash
    git clone https://github.com/esdrassantos06/blog-nodejs-api
    cd blog-nodejs-api
    ```
 
-2. **Instale as dependências:**
+2. **Install dependencies:**
 
    ```bash
    npm install
    ```
    
-3. **Configuração do arquivo de variáveis de ambiente (.env):**
+3. **Environment variables file configuration (.env):**
 
-   Crie um arquivo `.env` na raiz do projeto e defina as seguintes variáveis:
+   Create a `.env` file in the project root and define the following variables:
 
    ```bash
    DATABASE_URI=postgres://username:password@host:port/database
    PORT=3000
-   API_KEY=sua_chave_secreta_aqui
-   ALLOWED_ORIGINS=http://localhost:3000,https://seusite.com
-   NODE_ENV=development
+   API_KEY=your_secret_key_here
+   ALLOWED_ORIGINS=http://localhost:3000,https://yoursite.com
+   NODE_ENV=production
    ```
    
-   Certifique-se de substituir `postgres://username:password@host:port/database` pela sua URL de conexão com o PostgreSQL e `sua_chave_secreta_aqui` por uma chave de API forte e única.
+   Make sure to replace `postgres://username:password@host:port/database` with your PostgreSQL connection URL and `your_secret_key_here` with a strong and unique API key.
 
-## Variáveis de Ambiente
+## Environment Variables
 
-- `DATABASE_URI`: URL de conexão com o banco de dados PostgreSQL.
-- `PORT`: Porta na qual o servidor irá rodar (padrão: 3000).
-- `API_KEY`: Chave secreta para autorizar operações de modificação (POST, PUT, DELETE).
-- `ALLOWED_ORIGINS`: Lista de origens permitidas para CORS (separadas por vírgula).
-- `NODE_ENV`: Ambiente de execução (development, production).
+- `DATABASE_URI`: PostgreSQL database connection URL.
+- `PORT`: Port on which the server will run (default: 3000).
+- `API_KEY`: Secret key to authorize modification operations (POST, PUT, DELETE).
+- `ALLOWED_ORIGINS`: List of allowed origins for CORS (comma-separated).
+- `NODE_ENV`: Execution environment (development, production).
 
-## Modelo de Dados
+## Data Model
 
-O modelo de dados utilizado é o **Blog** com os seguintes campos:
+The data model used is **Blog** with the following fields:
 
 ```json
 {
-  "id": "Integer (auto-incremento)", // ID numérico sequencial gerado automaticamente
-  "title": "String", // Título do blog. Obrigatório, entre 1 e 200 caracteres.
-  "author": "String", // Autor do blog. Obrigatório, entre 1 e 100 caracteres.
-  "description": "String", // Descrição ou conteúdo do blog. Máximo de 5000 caracteres.
-  "age": "Integer", // Número inteiro entre 0 e 150.
-  "createdAt": "Date", // Data de criação do registro (gerado automaticamente)
-  "updatedAt": "Date" // Data da última atualização (gerado automaticamente)
+  "id": "Integer (auto-increment)", // Sequential numeric ID automatically generated
+  "title": "String", // Blog title. Required, between 1 and 200 characters.
+  "author": "String", // Blog author. Required, between 1 and 100 characters.
+  "description": "String", // Blog description or content. Maximum 5000 characters.
+  "age": "Integer", // Integer between 0 and 150.
+  "createdAt": "Date", // Record creation date (automatically generated)
+  "updatedAt": "Date" // Last update date (automatically generated)
 }
 ```
 
 ---
 
-## Autenticação
+## Authentication
 
-Esta API implementa um sistema de autenticação baseado em token para proteger as operações de modificação de dados:
+This API implements a token-based authentication system to protect data modification operations:
 
-- Endpoints **GET** são públicos e podem ser acessados por qualquer pessoa sem autenticação (exceto rotas administrativas).
-- Endpoints **POST**, **PUT**, **DELETE** e todas as rotas **/admin/** requerem autenticação via token de API.
+- **GET** endpoints are public and can be accessed by anyone without authentication (except administrative routes).
+- **POST**, **PUT**, **DELETE** endpoints and all **/admin/** routes require API token authentication.
 
-Para usar os métodos protegidos, você deve incluir o cabeçalho de autorização em suas requisições:
+To use protected methods, you must include the authorization header in your requests:
 
 ```
-Authorization: Bearer sua_chave_secreta_aqui
+Authorization: Bearer your_secret_key_here
 ```
 
-Onde `sua_chave_secreta_aqui` deve corresponder à chave definida na variável de ambiente `API_KEY`.
+Where `your_secret_key_here` must match the key defined in the `API_KEY` environment variable.
 
-### Usando Postman para Acessar Métodos Protegidos
+### Using Postman to Access Protected Methods
 
-1. Abra o Postman e crie uma nova requisição
-2. Selecione o método desejado (POST, PUT ou DELETE)
-3. Digite a URL da sua API
-4. Na aba "Headers", adicione:
+1. Open Postman and create a new request
+2. Select the desired method (POST, PUT, or DELETE)
+3. Enter your API URL
+4. In the "Headers" tab, add:
    - Key: `Authorization`
-   - Value: `Bearer sua_chave_secreta_aqui`
-5. Para métodos POST e PUT, configure o corpo da requisição na aba "Body":
-   - Selecione "raw" e "JSON"
-   - Adicione o JSON com os dados do blog
-6. Clique em "Send" para enviar a requisição
+   - Value: `Bearer your_secret_key_here`
+5. For POST and PUT methods, configure the request body in the "Body" tab:
+   - Select "raw" and "JSON"
+   - Add the JSON with the blog data
+6. Click "Send" to send the request
 
-Se a autenticação estiver correta, a API processará sua solicitação. Caso contrário, você receberá um erro 401 (Não Autorizado).
-
----
-
-## Segurança
-
-A API implementa várias camadas de segurança:
-
-- **Helmet**: Configuração de cabeçalhos HTTP para proteção contra vulnerabilidades comuns
-- **Rate Limiting**: Limite de 100 requisições por IP em janelas de 15 minutos
-- **Limitação de Tamanho de Payload**: Máximo de 1MB para requisições JSON
-- **Verificação de SSL**: Em ambiente de produção, exige conexões SSL válidas
-- **CORS Configurável**: Restrição de origens com base na configuração do ambiente
-- **Validação de Entradas**: Verificação rigorosa de todos os dados recebidos
+If the authentication is correct, the API will process your request. Otherwise, you will receive a 401 error (Unauthorized).
 
 ---
 
-## Gerenciamento de IDs
+## Security
 
-A API implementa um sistema avançado de gerenciamento de IDs para manter os registros de blog em ordem sequencial:
+The API implements several security layers:
 
-### Recursos de Reorganização de IDs
-
-- **Reinicialização e Reordenação**: Função `reorganizeIds` para redefinir e reordenar os IDs dos posts de blog
-- **Ajuste Automático de Sequência**: Atualização da sequência de IDs no PostgreSQL durante a inicialização
-- **Ordenação por ID**: Retorno dos blogs ordenados por ID na rota GET principal
-- **Rota de Administração**: Endpoint específico para reorganização manual de IDs
-- **Reorganização Após Exclusão**: Reorganização automática dos IDs após a exclusão de um blog
-- **Tratamento de Erros**: Sistema robusto de tratamento de erros e registro de logs
-
-### Funcionamento
-
-1. **Durante a inicialização**: O sistema ajusta a sequência do PostgreSQL para corresponder ao ID máximo existente
-2. **Após deleção**: Quando um blog é excluído, todos os IDs são reorganizados automaticamente
-3. **Manutenção**: Uma rota administrativa permite acionar a reorganização manualmente quando necessário
-
-Esta funcionalidade garante que os IDs permaneçam sequenciais e sem lacunas, facilitando a navegação e a referência aos registros do blog.
+- **Helmet**: HTTP headers configuration for protection against common vulnerabilities
+- **Rate Limiting**: Limit of 100 requests per IP in 15-minute windows
+- **Payload Size Limitation**: Maximum of 1MB for JSON requests
+- **SSL Verification**: In production environment, requires valid SSL connections
+- **Configurable CORS**: Origin restriction based on environment configuration
+- **Input Validation**: Strict verification of all received data
 
 ---
 
-## Validação de Dados
+## ID Management
 
-A API utiliza express-validator para garantir que todos os dados recebidos atendam aos critérios definidos:
+The API implements an advanced ID management system to keep blog records in sequential order:
 
-- **title**: String obrigatória entre 1 e 200 caracteres
-- **author**: String obrigatória entre 1 e 100 caracteres
-- **description**: String opcional com máximo de 5000 caracteres
-- **age**: Número inteiro opcional entre 0 e 150
-- **id**: Validação em parâmetros de rota para garantir que sejam números inteiros
+### ID Reorganization Features
 
-Os erros de validação são retornados com status 400 e incluem detalhes sobre cada campo inválido.
+- **Reset and Reordering**: `reorganizeIds` function to reset and reorder blog post IDs
+- **Automatic Sequence Adjustment**: Updates PostgreSQL ID sequence during initialization
+- **Sorting by ID**: Returns blogs sorted by ID in the main GET route
+- **Administration Route**: Specific endpoint for manual ID reorganization
+- **Reorganization After Deletion**: Automatic ID reorganization after a blog deletion
+- **Error Handling**: Robust error handling and logging system
+
+### How It Works
+
+1. **During initialization**: The system adjusts the PostgreSQL sequence to match the existing maximum ID
+2. **After deletion**: When a blog is deleted, all IDs are automatically reorganized
+3. **Maintenance**: An administrative route allows triggering reorganization manually when needed
+
+This functionality ensures that IDs remain sequential and without gaps, facilitating navigation and reference to blog records.
+
+---
+
+## Data Validation
+
+The API uses express-validator to ensure all received data meets the defined criteria:
+
+- **title**: Required string between 1 and 200 characters
+- **author**: Required string between 1 and 100 characters
+- **description**: Optional string with maximum 5000 characters
+- **age**: Optional integer between 0 and 150
+- **id**: Validation in route parameters to ensure they are integers
+
+Validation errors are returned with status 400 and include details about each invalid field.
 
 ---
 
 ## Logging
 
-A API implementa um sistema completo de logging com Winston:
+The API implements a complete logging system with Winston:
 
-- **Arquivos de Log**: 
-  - `error.log`: Apenas mensagens de erro
-  - `combined.log`: Todas as mensagens de log
-- **Console**: Em ambiente de desenvolvimento, logs também são exibidos no console
-- **Níveis de Log**: 
-  - INFO: Operações normais, inicialização, criação de recursos
-  - ERROR: Falhas do sistema, erros de banco de dados
-  - WARN: Tentativas de acesso não autorizadas
-  - DEBUG: Logs de consultas SQL (quando ativado)
+- **Console**: In development environment, logs are also displayed in the console
+- **Log Levels**: 
+  - INFO: Normal operations, initialization, resource creation
+  - ERROR: System failures, database errors
+  - WARN: Unauthorized access attempts
+  - DEBUG: SQL query logs (when enabled)
 
-Os logs incluem timestamps e detalhes contextuais para facilitar a depuração.
+Logs include timestamps and contextual details to facilitate debugging.
 
 ---
 
@@ -202,32 +199,32 @@ Os logs incluem timestamps e detalhes contextuais para facilitar a depuração.
 
 ### **GET /**
 
-**Descrição:** Retorna todos os blogs cadastrados, ordenados por ID.
+**Description:** Returns all registered blogs, sorted by ID.
 
-**Requisição:**
+**Request:**
 
-- **Método:** `GET`
+- **Method:** `GET`
 - **URL:** `/`
-- **Autenticação:** Não necessária
+- **Authentication:** Not required
 
-**Resposta de Sucesso (200):**
+**Success Response (200):**
 
 ```json
 [
   {
     "id": 1,
-    "title": "Meu primeiro Blog",
-    "author": "João Silva",
-    "description": "Descrição do blog...",
+    "title": "My First Blog",
+    "author": "John Smith",
+    "description": "Blog description...",
     "age": 30,
     "createdAt": "2025-03-06T10:00:00.000Z",
     "updatedAt": "2025-03-06T10:00:00.000Z"
   },
   {
     "id": 2,
-    "title": "Outro Blog",
-    "author": "Maria Souza",
-    "description": "Outra descrição...",
+    "title": "Another Blog",
+    "author": "Mary Johnson",
+    "description": "Another description...",
     "age": 25,
     "createdAt": "2025-03-06T11:30:00.000Z",
     "updatedAt": "2025-03-06T11:30:00.000Z"
@@ -235,11 +232,11 @@ Os logs incluem timestamps e detalhes contextuais para facilitar a depuração.
 ]
 ```
 
-**Resposta de Erro (500):**
+**Error Response (500):**
 
 ```json
 {
-  "message": "Erro interno do servidor"
+  "message": "Internal server error"
 }
 ```
 
@@ -247,30 +244,30 @@ Os logs incluem timestamps e detalhes contextuais para facilitar a depuração.
 
 ### **GET /:id**
 
-**Descrição:** Retorna um blog específico a partir do ID informado.
+**Description:** Returns a specific blog based on the provided ID.
 
-**Requisição:**
+**Request:**
 
-- **Método:** `GET`
+- **Method:** `GET`
 - **URL:** `/:id`
-- **Autenticação:** Não necessária
-- **Validação:** ID deve ser um número inteiro
+- **Authentication:** Not required
+- **Validation:** ID must be an integer
 
-**Resposta de Sucesso (200):**
+**Success Response (200):**
 
 ```json
 {
   "id": 1,
-  "title": "Meu primeiro Blog",
-  "author": "João Silva",
-  "description": "Descrição do blog...",
+  "title": "My First Blog",
+  "author": "John Smith",
+  "description": "Blog description...",
   "age": 30,
   "createdAt": "2025-03-06T10:00:00.000Z",
   "updatedAt": "2025-03-06T10:00:00.000Z"
 }
 ```
 
-**Resposta de Erro (404):**
+**Error Response (404):**
 
 ```json
 {
@@ -278,14 +275,14 @@ Os logs incluem timestamps e detalhes contextuais para facilitar a depuração.
 }
 ```
 
-**Resposta de Erro (400) - Validação:**
+**Error Response (400) - Validation:**
 
 ```json
 {
   "errors": [
     {
       "param": "id",
-      "msg": "ID deve ser um número inteiro",
+      "msg": "ID must be an integer",
       "location": "params"
     }
   ]
@@ -296,47 +293,47 @@ Os logs incluem timestamps e detalhes contextuais para facilitar a depuração.
 
 ### **POST /**
 
-**Descrição:** Cria um novo blog.
+**Description:** Creates a new blog.
 
-**Requisição:**
+**Request:**
 
-- **Método:** `POST`
+- **Method:** `POST`
 - **URL:** `/`
 - **Headers:**
   - `Content-Type: application/json`
-  - `Authorization: Bearer sua_chave_secreta_aqui`
-- **Validação:** 
-  - title: String obrigatória entre 1 e 200 caracteres
-  - author: String obrigatória entre 1 e 100 caracteres
-  - description: String opcional com máximo de 5000 caracteres
-  - age: Número inteiro opcional entre 0 e 150
+  - `Authorization: Bearer your_secret_key_here`
+- **Validation:** 
+  - title: Required string between 1 and 200 characters
+  - author: Required string between 1 and 100 characters
+  - description: Optional string with maximum 5000 characters
+  - age: Optional integer between 0 and 150
 
 **Body:**
 
 ```json
 {
-  "title": "Novo Blog",
+  "title": "New Blog",
   "author": "Ana Paula",
-  "description": "Conteúdo do novo blog...",
+  "description": "Content of the new blog...",
   "age": 28
 }
 ```
 
-**Resposta de Sucesso (201):**
+**Success Response (201):**
 
 ```json
 {
   "id": 3,
-  "title": "Novo Blog",
+  "title": "New Blog",
   "author": "Ana Paula",
-  "description": "Conteúdo do novo blog...",
+  "description": "Content of the new blog...",
   "age": 28,
   "createdAt": "2025-03-07T15:20:30.000Z",
   "updatedAt": "2025-03-07T15:20:30.000Z"
 }
 ```
 
-**Resposta de Erro (401):**
+**Error Response (401):**
 
 ```json
 {
@@ -344,14 +341,14 @@ Os logs incluem timestamps e detalhes contextuais para facilitar a depuração.
 }
 ```
 
-**Resposta de Erro (400) - Validação:**
+**Error Response (400) - Validation:**
 
 ```json
 {
   "errors": [
     {
       "param": "title",
-      "msg": "Título deve ter entre 1 e 200 caracteres",
+      "msg": "Title must be between 1 and 200 characters",
       "location": "body"
     }
   ]
@@ -362,56 +359,56 @@ Os logs incluem timestamps e detalhes contextuais para facilitar a depuração.
 
 ### **PUT /:id**
 
-**Descrição:** Atualiza um blog existente a partir do ID informado.
+**Description:** Updates an existing blog based on the provided ID.
 
-**Requisição:**
+**Request:**
 
-- **Método:** `PUT`
+- **Method:** `PUT`
 - **URL:** `/:id`
 - **Headers:**
   - `Content-Type: application/json`
-  - `Authorization: Bearer sua_chave_secreta_aqui`
-- **Validação:**
-  - id: Deve ser um número inteiro
-  - title: String opcional entre 1 e 200 caracteres
-  - author: String opcional entre 1 e 100 caracteres
-  - description: String opcional com máximo de 5000 caracteres
-  - age: Número inteiro opcional entre 0 e 150
+  - `Authorization: Bearer your_secret_key_here`
+- **Validation:**
+  - id: Must be an integer
+  - title: Optional string between 1 and 200 characters
+  - author: Optional string between 1 and 100 characters
+  - description: Optional string with maximum 5000 characters
+  - age: Optional integer between 0 and 150
 
 **Body:**
 
 ```json
 {
-  "title": "Blog Atualizado",
+  "title": "Updated Blog",
   "author": "Ana Paula",
-  "description": "Descrição atualizada...",
+  "description": "Updated description...",
   "age": 29
 }
 ```
 
-**Resposta de Sucesso (200):**
+**Success Response (200):**
 
 ```json
 {
   "id": 3,
-  "title": "Blog Atualizado",
+  "title": "Updated Blog",
   "author": "Ana Paula",
-  "description": "Descrição atualizada...",
+  "description": "Updated description...",
   "age": 29,
   "createdAt": "2025-03-07T15:20:30.000Z",
   "updatedAt": "2025-03-07T15:25:10.000Z"
 }
 ```
 
-**Resposta de Erro (404):**
+**Error Response (404):**
 
 ```json
 {
-  "message": "Blog não encontrado"
+  "message": "Blog not found"
 }
 ```
 
-**Resposta de Erro (401):**
+**Error Response (401):**
 
 ```json
 {
@@ -419,14 +416,14 @@ Os logs incluem timestamps e detalhes contextuais para facilitar a depuração.
 }
 ```
 
-**Resposta de Erro (400) - Validação:**
+**Error Response (400) - Validation:**
 
 ```json
 {
   "errors": [
     {
       "param": "age",
-      "msg": "Idade deve ser entre 0 e 150",
+      "msg": "Age must be between a and 150",
       "location": "body"
     }
   ]
@@ -437,17 +434,17 @@ Os logs incluem timestamps e detalhes contextuais para facilitar a depuração.
 
 ### **DELETE /:id**
 
-**Descrição:** Deleta um blog a partir do ID informado e reorganiza automaticamente os IDs.
+**Description:** Deletes a blog based on the provided ID and automatically reorganizes IDs.
 
-**Requisição:**
+**Request:**
 
-- **Método:** `DELETE`
+- **Method:** `DELETE`
 - **URL:** `/:id`
 - **Headers:**
-  - `Authorization: Bearer sua_chave_secreta_aqui`
-- **Validação:** ID deve ser um número inteiro
+  - `Authorization: Bearer your_secret_key_here`
+- **Validation:** ID must be an integer
 
-**Resposta de Sucesso (200):**
+**Success Response (200):**
 
 ```json
 {
@@ -455,7 +452,7 @@ Os logs incluem timestamps e detalhes contextuais para facilitar a depuração.
 }
 ```
 
-**Resposta de Erro (404):**
+**Error Response (404):**
 
 ```json
 {
@@ -463,7 +460,7 @@ Os logs incluem timestamps e detalhes contextuais para facilitar a depuração.
 }
 ```
 
-**Resposta de Erro (401):**
+**Error Response (401):**
 
 ```json
 {
@@ -471,14 +468,14 @@ Os logs incluem timestamps e detalhes contextuais para facilitar a depuração.
 }
 ```
 
-**Resposta de Erro (400) - Validação:**
+**Error Response (400) - Validation:**
 
 ```json
 {
   "errors": [
     {
       "param": "id",
-      "msg": "ID deve ser um número inteiro",
+      "msg": "ID must be an integer",
       "location": "params"
     }
   ]
@@ -489,24 +486,24 @@ Os logs incluem timestamps e detalhes contextuais para facilitar a depuração.
 
 ### **POST /admin/reorganize-ids**
 
-**Descrição:** Reorganiza manualmente os IDs de todos os blogs no banco de dados.
+**Description:** Manually reorganizes the IDs of all blogs in the database.
 
-**Requisição:**
+**Request:**
 
-- **Método:** `POST`
+- **Method:** `POST`
 - **URL:** `/admin/reorganize-ids`
 - **Headers:**
-  - `Authorization: Bearer sua_chave_secreta_aqui`
+  - `Authorization: Bearer your_secret_key_here`
 
-**Resposta de Sucesso (200):**
+**Success Response (200):**
 
 ```json
 {
-  "message": "IDs reorganizados com sucesso"
+  "message": "IDs successfully reorganized"
 }
 ```
 
-**Resposta de Erro (401):**
+**Error Response (401):**
 
 ```json
 {
@@ -514,57 +511,57 @@ Os logs incluem timestamps e detalhes contextuais para facilitar a depuração.
 }
 ```
 
-**Resposta de Erro (500):**
+**Error Response (500):**
 
 ```json
 {
-  "message": "Erro interno do servidor"
+  "message": "Internal server error"
 }
 ```
 
 ---
 
-## Tratamento de Erros
+## Error Handling
 
-A API implementa tratamento de erros em múltiplos níveis:
+The API implements error handling at multiple levels:
 
-- **Middleware de Erros**: Captura exceções não tratadas e retorna mensagens padronizadas
-- **Validação de Requisições**: Verifica dados de entrada antes do processamento
-- **Tratamento de Exceções**: Try/catch em todas as operações de banco de dados
-- **Logging de Erros**: Registro detalhado de todos os erros para depuração
-- **Handlers para Processos**: Captura de exceções não tratadas e promessas rejeitadas no nível do processo
-- **Retorno apropriado de códigos HTTP**: Uso adequado de status codes (400, 401, 404, 500)
+- **Error Middleware**: Captures unhandled exceptions and returns standardized messages
+- **Request Validation**: Verifies input data before processing
+- **Exception Handling**: Try/catch in all database operations
+- **Error Logging**: Detailed recording of all errors for debugging
+- **Process Handlers**: Capturing of unhandled exceptions and rejected promises at the process level
+- **Appropriate HTTP status codes**: Proper use of status codes (400, 401, 404, 500)
 
 ---
 
-## Exemplos de Requisições e Respostas
+## Request and Response Examples
 
-### **Exemplo de criação de um novo blog (POST)**
+### **Example of creating a new blog (POST)**
 
-**Requisição:**
+**Request:**
 
 ```http
 POST / HTTP/1.1
 Host: localhost:3000
 Content-Type: application/json
-Authorization: Bearer sua_chave_secreta_aqui
+Authorization: Bearer your_secret_key_here
 
 {
-  "title": "Como aprender Node.js",
+  "title": "How to learn Node.js",
   "author": "Carlos Eduardo",
-  "description": "Dicas e truques para dominar Node.js.",
+  "description": "Tips and tricks to master Node.js.",
   "age": 31
 }
 ```
 
-**Resposta:**
+**Response:**
 
 ```json
 {
   "id": 4,
-  "title": "Como aprender Node.js",
+  "title": "How to learn Node.js",
   "author": "Carlos Eduardo",
-  "description": "Dicas e truques para dominar Node.js.",
+  "description": "Tips and tricks to master Node.js.",
   "age": 31,
   "createdAt": "2025-03-07T16:45:20.000Z",
   "updatedAt": "2025-03-07T16:45:20.000Z"
@@ -573,32 +570,32 @@ Authorization: Bearer sua_chave_secreta_aqui
 
 ---
 
-### **Exemplo de atualização de um blog (PUT)**
+### **Example of updating a blog (PUT)**
 
-**Requisição:**
+**Request:**
 
 ```http
 PUT /4 HTTP/1.1
 Host: localhost:3000
 Content-Type: application/json
-Authorization: Bearer sua_chave_secreta_aqui
+Authorization: Bearer your_secret_key_here
 
 {
-  "title": "Como aprender Node.js - Atualizado",
+  "title": "How to learn Node.js - Updated",
   "author": "Carlos Eduardo",
-  "description": "Conteúdo atualizado com novas dicas.",
+  "description": "Updated content with new tips.",
   "age": 32
 }
 ```
 
-**Resposta:**
+**Response:**
 
 ```json
 {
   "id": 4,
-  "title": "Como aprender Node.js - Atualizado",
+  "title": "How to learn Node.js - Updated",
   "author": "Carlos Eduardo",
-  "description": "Conteúdo atualizado com novas dicas.",
+  "description": "Updated content with new tips.",
   "age": 32,
   "createdAt": "2025-03-07T16:45:20.000Z",
   "updatedAt": "2025-03-07T16:50:15.000Z"
@@ -607,42 +604,40 @@ Authorization: Bearer sua_chave_secreta_aqui
 
 ---
 
-### **Exemplo de reorganização manual de IDs (POST)**
+### **Example of manual ID reorganization (POST)**
 
-**Requisição:**
+**Request:**
 
 ```http
 POST /admin/reorganize-ids HTTP/1.1
 Host: localhost:3000
-Authorization: Bearer sua_chave_secreta_aqui
+Authorization: Bearer your_secret_key_here
 ```
 
-**Resposta:**
+**Response:**
 
 ```json
 {
-  "message": "IDs reorganizados com sucesso"
+  "message": "IDs successfully reorganized"
 }
 ```
 
 ---
 
-## Rodando a Aplicação
+## Running the Application
 
-**Inicie o servidor:**
+**Start the server:**
 
 ```bash
-npm start
+npm run start
 ```
 
-**Acesso:**
+**Access:**
 
-O servidor estará rodando na porta definida na variável de ambiente (padrão: `3000`).
+The server will be running on the port defined in the environment variable (default: `3000`).
 
-Exemplo: [http://localhost:3000](http://localhost:3000)
+Example: [http://localhost:3000](http://localhost:3000)
 
 **Logs:**
 
-A aplicação gera logs em:
-- `error.log`: Apenas erros
-- `combined.log`: Todos os logs da aplicação
+The application generates logs in the terminal.
