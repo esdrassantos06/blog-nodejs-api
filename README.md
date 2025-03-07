@@ -16,8 +16,7 @@ A RESTful API for blog management with JWT authentication, role-based authorizat
 ## Documentation
 
 API documentation is available at:
-- Local: http://localhost:3000/api-docs
-- Hosted: https://blog-nodejs-api-s679.onrender.com/api-docs
+https://blog-nodejs-api-s679.onrender.com/docs
 
 ### Prerequisites
 
