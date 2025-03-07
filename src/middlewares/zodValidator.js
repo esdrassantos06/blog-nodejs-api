@@ -10,6 +10,11 @@ import logger from '../config/logger.js';
 export const validateWith = (schema) => {
     return (req, res, next) => {
         try {
+
+            if (!schema) {
+                return next();
+            }
+
             const result = schema.safeParse({
                 body: req.body,
                 query: req.query,
@@ -17,14 +22,27 @@ export const validateWith = (schema) => {
             });
 
             if (!result.success) {
+                // Loga o erro mas não para a execução para rotas que não precisam de validação
                 logger.warn('Validation error', result.error.format());
+
+                const errors = result.error.format();
+                if (errors.params &&
+                    errors.params.id &&
+                    errors.params.id._errors.includes("ID must be a numeric value")) {
+                    const path = req.path;
+                    if (path === '/docs' || path.startsWith('/api-docs') || path === '/favicon.ico') {
+                        // Para rotas conhecidas, permitimos continuar
+                        return next();
+                    }
+                }
+
                 return res.status(400).json({
                     message: 'Validation error',
                     errors: result.error.format()
                 });
             }
 
-            // Optional: replace validated and transformed data
+
             req.body = result.data.body;
             req.query = result.data.query;
             req.params = result.data.params;
@@ -37,8 +55,19 @@ export const validateWith = (schema) => {
     };
 };
 
+const betterIdSchema = z.string().refine(
+    (val) => {
+        if (!isNaN(parseInt(val))) {
+            return true;
+        }
+        return ['docs', 'api-docs', 'favicon.ico'].includes(val);
+    },
+    { message: "ID must be a numeric value" }
+);
+
 // Scheme for blog validation
 export const blogSchemas = {
+    
     // Scheme for creation
     create: z.object({
         body: z.object({
@@ -61,9 +90,7 @@ export const blogSchemas = {
         }),
         query: z.object({}).optional(),
         params: z.object({
-            id: z.string().refine(val => !isNaN(parseInt(val)), {
-                message: 'ID must be a numeric value'
-            })
+            id: betterIdSchema
         })
     }),
     // Scheme for search with pagination and filtering
@@ -88,9 +115,7 @@ export const blogSchemas = {
         body: z.object({}).optional(),
         query: z.object({}).optional(),
         params: z.object({
-            id: z.string().refine(val => !isNaN(parseInt(val)), {
-                message: "ID must be a numeric value"
-            })
+            id: betterIdSchema
         })
     }),
 
@@ -99,9 +124,7 @@ export const blogSchemas = {
         body: z.object({}).optional(),
         query: z.object({}).optional(),
         params: z.object({
-            id: z.string().refine(val => !isNaN(parseInt(val)), {
-                message: "ID must be a numeric value"
-            })
+            id: betterIdSchema
         })
     }),
 
@@ -110,9 +133,7 @@ export const blogSchemas = {
         body: z.object({}).optional(),
         query: z.object({}).optional(),
         params: z.object({
-            id: z.string().refine(val => !isNaN(parseInt(val)), {
-                message: "ID must be a numeric value"
-            })
+            id: betterIdSchema
         })
     })
 };
