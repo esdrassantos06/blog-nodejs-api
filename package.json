@@ -1,5 +1,5 @@
 {
-  "name": "api-express-mongodb",
+  "name": "api-express-postgresql",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -7,8 +7,8 @@
     "node": "20.x"
   },
   "scripts": {
-    "start": "NODE_ENV=production node app.js",
-    "dev": "NODE_ENV=development node app.js"
+    "start": "cross-env NODE_ENV=production node src/index.js",
+    "dev": "cross-env NODE_ENV=development node src/index.js"
   },
   "keywords": [],
   "author": "",
@@ -24,5 +24,8 @@
     "pg": "^8.13.3",
     "sequelize": "^6.37.6",
     "winston": "^3.17.0"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3"
   }
 }
