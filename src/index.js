@@ -11,6 +11,8 @@ app.use(cors());
 
 const port = process.env.PORT || 3000;
 
+const API_KEY = process.env.API_KEY;
+
 const sequelize = new Sequelize(process.env.DATABASE_URI, {
     dialect: 'postgres',
     dialectOptions: {
@@ -45,6 +47,31 @@ const Blog = sequelize.define('Blog', {
 sequelize.sync()
     .then(() => console.log("PostgreSQL database & tables created!"))
     .catch(err => console.error("Error syncing database:", err));
+
+// Middleware para verificar autenticação em métodos não-GET
+app.use((req,res,next) =>{
+    if(req.method === 'GET'){
+        return next();
+    }
+
+    const authHeader = req.headers.authorization;
+    if(!authHeader || !authHeader.startsWith('Bearer ')){
+        return res.status(401).json({
+            message: "Unauthorized. Missing or invalid token."
+        });
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    if(token !== API_KEY){
+        return res.status(401).json({
+            message: "Unauthorized. Invalid token."
+        });
+    }
+
+    next();
+})
+
 
 
 //GET pelo ID

@@ -1,6 +1,6 @@
 # Documentação da API - blog-nodejs-api
 
-Esta documentação descreve a API desenvolvida com Express e PostgreSQL para gerenciar blogs. A API permite criar, ler, atualizar e deletar registros de blog armazenados no PostgreSQL.
+Esta documentação descreve a API desenvolvida com Express e PostgreSQL para gerenciar blogs. A API permite criar, ler, atualizar e deletar registros de blog armazenados no PostgreSQL, com restrições de acesso para métodos de modificação.
 
 ---
 
@@ -10,6 +10,7 @@ Esta documentação descreve a API desenvolvida com Express e PostgreSQL para ge
 - [Instalação e Configuração](#instalação-e-configuração)
 - [Variáveis de Ambiente](#variáveis-de-ambiente)
 - [Modelo de Dados](#modelo-de-dados)
+- [Autenticação](#autenticação)
 - [Endpoints](#endpoints)
   - [GET /](#get-)
   - [GET /:id](#get-id)
@@ -53,14 +54,16 @@ Crie um arquivo `.env` na raiz do projeto e defina as seguintes variáveis:
    ```bash
    DATABASE_URI=postgres://username:password@host:port/database
    PORT=3000
+   API_KEY=sua_chave_secreta_aqui
    ```
    
-Certifique-se de substituir `postgres://username:password@host:port/database` pela sua URL de conexão com o PostgreSQL.
+Certifique-se de substituir `postgres://username:password@host:port/database` pela sua URL de conexão com o PostgreSQL e `sua_chave_secreta_aqui` por uma chave de API forte e única.
 
 ## Variáveis de Ambiente
 
 - `DATABASE_URL`: URL de conexão com o banco de dados PostgreSQL.
 - `PORT`: Porta na qual o servidor irá rodar (padrão: 3000).
+- `API_KEY`: Chave secreta para autorizar operações de modificação (POST, PUT, DELETE).
 
 ## Modelo de Dados
 
@@ -80,6 +83,38 @@ O modelo de dados utilizado é o **Blog** com os seguintes campos:
 
 ---
 
+## Autenticação
+
+Esta API implementa um sistema de autenticação baseado em token para proteger as operações de modificação de dados:
+
+- Endpoints **GET** são públicos e podem ser acessados por qualquer pessoa sem autenticação.
+- Endpoints **POST**, **PUT** e **DELETE** requerem autenticação via token de API.
+
+Para usar os métodos protegidos, você deve incluir o cabeçalho de autorização em suas requisições:
+
+```
+Authorization: Bearer sua_chave_secreta_aqui
+```
+
+Onde `sua_chave_secreta_aqui` deve corresponder à chave definida na variável de ambiente `API_KEY`.
+
+### Usando Postman para Acessar Métodos Protegidos
+
+1. Abra o Postman e crie uma nova requisição
+2. Selecione o método desejado (POST, PUT ou DELETE)
+3. Digite a URL da sua API
+4. Na aba "Headers", adicione:
+   - Key: `Authorization`
+   - Value: `Bearer sua_chave_secreta_aqui`
+5. Para métodos POST e PUT, configure o corpo da requisição na aba "Body":
+   - Selecione "raw" e "JSON"
+   - Adicione o JSON com os dados do blog
+6. Clique em "Send" para enviar a requisição
+
+Se a autenticação estiver correta, a API processará sua solicitação. Caso contrário, você receberá um erro 401 (Não Autorizado) ou 403 (Proibido).
+
+---
+
 ## Endpoints
 
 ### **GET /**
@@ -90,6 +125,7 @@ O modelo de dados utilizado é o **Blog** com os seguintes campos:
 
 - **Método:** `GET`
 - **URL:** `/`
+- **Autenticação:** Não necessária
 
 **Resposta de Sucesso (200):**
 
@@ -126,6 +162,7 @@ O modelo de dados utilizado é o **Blog** com os seguintes campos:
 
 - **Método:** `GET`
 - **URL:** `/:id`
+- **Autenticação:** Não necessária
 
 **Resposta de Sucesso (200):**
 
@@ -159,7 +196,9 @@ O modelo de dados utilizado é o **Blog** com os seguintes campos:
 
 - **Método:** `POST`
 - **URL:** `/`
-- **Headers:** `Content-Type: application/json`
+- **Headers:** 
+  - `Content-Type: application/json`
+  - `Authorization: Bearer sua_chave_secreta_aqui`
 
 **Body:**
 
@@ -186,6 +225,14 @@ O modelo de dados utilizado é o **Blog** com os seguintes campos:
 }
 ```
 
+**Resposta de Erro (401):**
+
+```json
+{
+  "message": "Autenticação necessária para acessar este método"
+}
+```
+
 ---
 
 ### **PUT /:id**
@@ -196,7 +243,9 @@ O modelo de dados utilizado é o **Blog** com os seguintes campos:
 
 - **Método:** `PUT`
 - **URL:** `/:id`
-- **Headers:** `Content-Type: application/json`
+- **Headers:** 
+  - `Content-Type: application/json`
+  - `Authorization: Bearer sua_chave_secreta_aqui`
 
 **Body:**
 
@@ -231,6 +280,14 @@ O modelo de dados utilizado é o **Blog** com os seguintes campos:
 }
 ```
 
+**Resposta de Erro (401):**
+
+```json
+{
+  "message": "Autenticação necessária para acessar este método"
+}
+```
+
 ---
 
 ### **DELETE /:id**
@@ -241,18 +298,14 @@ O modelo de dados utilizado é o **Blog** com os seguintes campos:
 
 - **Método:** `DELETE`
 - **URL:** `/:id`
+- **Headers:** 
+  - `Authorization: Bearer sua_chave_secreta_aqui`
 
 **Resposta de Sucesso (200):**
 
 ```json
 {
-  "id": 3,
-  "title": "Blog a ser deletado",
-  "author": "Algum Autor",
-  "description": "Descrição...",
-  "age": 35,
-  "createdAt": "2025-03-07T15:20:30.000Z",
-  "updatedAt": "2025-03-07T15:25:10.000Z"
+  "message": "Blog deleted successfully"
 }
 ```
 
@@ -261,6 +314,14 @@ O modelo de dados utilizado é o **Blog** com os seguintes campos:
 ```json
 {
   "message": "Blog not Found"
+}
+```
+
+**Resposta de Erro (401):**
+
+```json
+{
+  "message": "Autenticação necessária para acessar este método"
 }
 ```
 
@@ -276,6 +337,7 @@ O modelo de dados utilizado é o **Blog** com os seguintes campos:
 POST / HTTP/1.1
 Host: localhost:3000
 Content-Type: application/json
+Authorization: Bearer sua_chave_secreta_aqui
 
 {
   "title": "Como aprender Node.js",
@@ -309,6 +371,7 @@ Content-Type: application/json
 PUT /4 HTTP/1.1
 Host: localhost:3000
 Content-Type: application/json
+Authorization: Bearer sua_chave_secreta_aqui
 
 {
   "title": "Como aprender Node.js - Atualizado",
