@@ -12,7 +12,7 @@ router.post('/register',
     body('password').isString().isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
     body('role').optional().isIn(['user', 'editor', 'admin']).withMessage('Role must be user, editor, or admin'),
     validate,
-    authenticate, 
+    authenticate,
     authorize('admin'), // Only Admin can register users
     authController.register
 );

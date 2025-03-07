@@ -6,7 +6,7 @@ import { authenticate, authorize } from '../middlewares/auth.js';
 const router = Router();
 
 router.use((req, res, next) => {
-    if (req.method === 'GET' && !req.path.includes('/admin/')) {
+    if ((req.method === 'GET' && !req.path.includes('/admin/'))) {
         return next();
     }
     authenticate(req, res, next);

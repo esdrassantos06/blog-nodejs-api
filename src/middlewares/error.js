@@ -1,15 +1,29 @@
 import logger from '../config/logger.js';
 
 // Global middleware to handle errors
+const errorMiddleware = (err, req, res, next) => {
+    // Log the full error details
+    logger.error(`Unhandled error: ${err.message}`, { 
+        stack: err.stack,
+        method: req.method,
+        path: req.path
+    });
 
-const errorMiddleWare = (err, req, res, next) => {
-    logger.error(`Unhandled error: ${err.message}`, {stack: err.stack});
-    res.status(500).json({messsage: "Internal server error"});
+    // Determine the appropriate status code
+    const statusCode = err.status || err.statusCode || 500;
+
+    // Send error response
+    res.status(statusCode).json({
+        message: err.message || "Internal server error",
+        ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    });
 };
 
 // Middleware to handle not found routes
-export const notFoundMiddleware = (req, res) => {
-    res.status(404).json({message: "Route not found"});
-}
+export const notFoundMiddleware = (req, res, next) => {
+    const error = new Error('Route not found');
+    error.status = 404;
+    next(error);
+};
 
-export default errorMiddleWare;
+export default errorMiddleware;
