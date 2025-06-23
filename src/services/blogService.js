@@ -38,8 +38,6 @@ class BlogService {
             const page = options.page || 1;
             const limit = options.limit || 10;
             const offset = (page - 1) * limit;
-
-            // build where clause
             const whereClause = { isDeleted: false };
 
             if (options.author) {
@@ -65,8 +63,6 @@ class BlogService {
                     { description: { [Op.iLike]: `%${options.search}%` } }
                 ];
             }
-
-            // Paginated consult
 
             const { count, rows } = await Blog.findAndCountAll({
                 where: whereClause,

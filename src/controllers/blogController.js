@@ -24,16 +24,17 @@ class BlogController {
  */
     async getBlogs(req, res) {
         try {
+            const q = req.safeQuery;
             const options = {
-                page: parseInt(req.query.page) || 1,
-                limit: parseInt(req.query.limit) || 10,
-                author: req.query.author,
-                title: req.query.title,
-                search: req.query.search,
-                minAge: req.query.minAge !== undefined ? parseInt(req.query.minAge) : undefined,
-                maxAge: req.query.maxAge !== undefined ? parseInt(req.query.maxAge) : undefined,
-                sortBy: req.query.sortBy,
-                sortOrder: req.query.sortOrder
+                page: q.page,
+                limit: q.limit,
+                author: q.author,
+                title: q.title,
+                search: q.search,
+                minAge: q.minAge,
+                maxAge: q.maxAge,
+                sortBy: q.sortBy,
+                sortOrder: q.sortOrder,
             };
 
             const result = await blogService.getBlogs(options);

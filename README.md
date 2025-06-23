@@ -16,13 +16,13 @@ A RESTful API for blog management with JWT authentication, role-based authorizat
 ## Documentation
 
 API documentation is available at:
-https://blog-nodejs-api-s679.onrender.com/docs
+https://blog-api.apidocumentation.com/guide/getting-started-with-the-blog-api
 
 ### Prerequisites
 
 - Node.js v20.x
-- PostgreSQL
-- npm or yarn
+- Docker
+- npm or yarn or bun
 
 ### Setup Instructions
 
@@ -37,15 +37,30 @@ cd blog-nodejs-api
 
 ```bash
 npm install
+# or
+yarn install
+# or
+bun install
 ```
 
-3. **Create a PostgreSQL database**
+3. **Start PostgreSQL database with Docker Compose**
 
-```sql
-CREATE DATABASE blogapi;
-CREATE USER bloguser WITH ENCRYPTED PASSWORD 'your_password';
-GRANT ALL PRIVILEGES ON DATABASE blogapi TO bloguser;
+### The project includes a docker-compose.yml file to easily spin up a PostgreSQL container:
+
+```bash
+docker-compose up -d
 ```
+
+This will create a PostgreSQL database with the following configuration:
+
+- User: docker
+- Password: docker
+- Database: polls
+- Port: 5433 (host) → 5432 (container)
+
+*Note: Make sure port 5433 is available on your machine.*
+
+
 
 4. **Configure environment variables**
 
@@ -53,7 +68,7 @@ Create a `.env` file in the project root:
 
 ```
 # Database
-DATABASE_URI=postgres://bloguser:your_password@localhost:5432/blogapi
+DATABASE_URI=postgres://docker:docker@localhost:5433/polls
 
 # Server
 PORT=3000
@@ -61,7 +76,7 @@ NODE_ENV=development
 
 # Security
 JWT_SECRET=your_jwt_secret_key
-ALLOWED_ORIGINS=http://localhost:3000
+ALLOWED_ORIGINS=http://localhost:3000,
 
 # Logging
 LOG_LEVEL=info
@@ -81,12 +96,12 @@ Since registration requires admin privileges, create the first admin directly in
 INSERT INTO "Users" (
   username, email, password, role, "isActive", "createdAt", "updatedAt"
 ) VALUES (
-  'admin', 
-  'admin@example.com', 
-  '$2b$10$FGYGfLOBtLFiVdSmlJGq4etaGIUYqIoLYOeUUgCR52g.IQ3amckZq', -- Password: admin123
-  'admin', 
-  true, 
-  NOW(), 
+  'admin',
+  'admin@example.com',
+  'yourHashedPass', -- use testhash.js
+  'admin',
+  true,
+  NOW(),
   NOW()
 );
 ```
@@ -113,16 +128,19 @@ curl -X POST http://localhost:3000/auth/register \
 ## API Endpoints
 
 ### Authentication
+
 - `POST /auth/login` - Login and get JWT token
 - `POST /auth/register` - Register new user (admin only)
 
 ### Users (admin only)
+
 - `GET /users/all` - List all users (optional `?inactive=true`)
 - `GET /users/:id` - Get user by ID
 - `DELETE /users/:id` - Deactivate user (soft delete)
 - `POST /users/:id/restore` - Restore deactivated user
 
 ### Blogs
+
 - `GET /` - List blogs with pagination and filters
   - Filters: `page, limit, search, author, title, minAge, maxAge, sortBy, sortOrder`
 - `GET /:id` - Get specific blog

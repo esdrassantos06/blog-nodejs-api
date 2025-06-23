@@ -19,12 +19,10 @@ const startServer = async () => {
             res.redirect('https://blog-api.apidocumentation.com/guide/getting-started-with-the-blog-api');
         });
 
-        // Registrar as rotas antes do middleware de 'not found'
         app.use('/auth', authRoutes);
         app.use('/users', userRoutes);
         app.use('/', blogRoutes);
 
-        // Este middleware deve ser o último
         app.use(notFoundMiddleware);
 
         const PORT = process.env.PORT || 3000;

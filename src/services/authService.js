@@ -47,7 +47,7 @@ class AuthService {
                 throw new Error('Invalid password');
             }
 
-            // Generate JWT token
+
             const token = jwt.sign(
                 {
                     id: user.id,
@@ -59,10 +59,6 @@ class AuthService {
                     expiresIn: '1d'
                 }
             );
-
-            // Debugging
-            console.log('Generated token:', token);
-
 
 
             const userWithoutPassword = user.toJSON();
@@ -115,7 +111,7 @@ class AuthService {
             const user = await User.findByPk(id);
             if (!user) return false;
 
-            // Soft delete - defines isActive = false
+            // Soft delete
             await user.update({ isActive: false });
             logger.info(`User ${id} (${user.username}) marked as inactive`);
             return true;
@@ -155,7 +151,7 @@ class AuthService {
 
             const users = await User.findAll({
                 where: whereClause,
-                attributes: { exclude: ['password'] } // Não retorna senhas
+                attributes: { exclude: ['password'] }
             });
 
             return users;
